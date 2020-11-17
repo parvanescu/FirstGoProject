@@ -1,10 +1,10 @@
 package model
-
-type IToDoItem interface {
-	GetItemId() int
-	GetTitle() string
-	GetDescription() string
-}
+import "ExGabi/interfaces"
+//type IToDoItem interface {
+//	GetItemId() int
+//	GetTitle() string
+//	GetDescription() string
+//}
 
 type toDoItem struct{
 	ItemId      int
@@ -12,7 +12,7 @@ type toDoItem struct{
 	Description string
 }
 
-func New(itemId int,title string,description string) toDoItem {
+func New(itemId int,title string,description string) interfaces.IToDoItem {
 	return toDoItem{
 		ItemId:      itemId,
 		Title:       title,

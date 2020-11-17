@@ -1,33 +1,34 @@
 package repository
 
 import (
+	"ExGabi/interfaces"
 	"ExGabi/model"
 	"fmt"
 )
 
-type IRepository interface{
-	Add(item model.IToDoItem)
-	Delete(id int) model.IToDoItem
-	Update(id int,newItem model.IToDoItem) model.IToDoItem
-	GetAll() []model.IToDoItem
+//type IRepository interface{
+//	Add(item model.IToDoItem)
+//	Delete(id int) model.IToDoItem
+//	Update(id int,newItem model.IToDoItem) model.IToDoItem
+//	GetAll() []model.IToDoItem
+//}
+
+type Repository struct{
+	dataArray []interfaces.IToDoItem
 }
 
-type repository struct{
-	dataArray []model.IToDoItem
-}
-
-func New()IRepository{
+func New()interfaces.IRepository{
 	fmt.Println("Repo initialized")
-	repo :=repository{make([]model.IToDoItem,0,1)}
+	repo :=Repository{make([]interfaces.IToDoItem,0,1)}
 	return &repo
 }
 
 
-func (r *repository)Add(item model.IToDoItem){
+func (r *Repository)Add(item interfaces.IToDoItem){
 	r.dataArray = append(r.dataArray,item)
 }
 
-func (r *repository)Delete(id int)model.IToDoItem{
+func (r *Repository)Delete(id int)interfaces.IToDoItem{
 	for i,v := range r.dataArray{
 		if v.GetItemId() == id{
 			item :=v
@@ -38,7 +39,7 @@ func (r *repository)Delete(id int)model.IToDoItem{
 	return model.New(0,"","")
 }
 
-func (r *repository)Update(id int,newItem model.IToDoItem)model.IToDoItem{
+func (r *Repository)Update(id int,newItem interfaces.IToDoItem)interfaces.IToDoItem{
 	for i,v  := range r.dataArray{
 		if v.GetItemId() == id{
 			newArray := append(r.dataArray[0:i],newItem)
@@ -54,6 +55,6 @@ func (r *repository)Update(id int,newItem model.IToDoItem)model.IToDoItem{
 	return model.New(0,"","")
 }
 
-func (r *repository)GetAll() []model.IToDoItem{
+func (r *Repository)GetAll() []interfaces.IToDoItem{
 	return r.dataArray
 }
