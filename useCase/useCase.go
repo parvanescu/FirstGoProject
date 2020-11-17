@@ -8,9 +8,9 @@ import (
 
 type IUseCase interface {
 	AddItem(id int,title string,description string)
-	DeleteItem(id int)model.ToDoItem
-	UpdateItem(id int,newTitle string,newDescription string)model.ToDoItem
-	GetItem(id int)model.ToDoItem
+	DeleteItem(id int)model.IToDoItem
+	UpdateItem(id int,newTitle string,newDescription string)model.IToDoItem
+	GetItem(id int)model.IToDoItem
 	GetAll()//[]model.ToDoItem
 }
 
@@ -27,38 +27,26 @@ func (uC *UseCase)Init(repository repository.IRepository){
 }
 
 func (uC *UseCase)AddItem(id int,title string,description string){
-	var item model.ToDoItem = model.ToDoItem{
-		ItemId:      id,
-		Title:       title,
-		Description: description,
-	}
+	var item model.IToDoItem = model.New(id,title,description)
 	uC.repository.Add(item)
 }
 
-func (uC *UseCase)DeleteItem(id int)model.ToDoItem{
+func (uC *UseCase)DeleteItem(id int)model.IToDoItem{
 	return uC.repository.Delete(id)
 }
 
-func (uC *UseCase)UpdateItem(id int,newTitle string,newDescription string)model.ToDoItem{
-	return uC.repository.Update(id,model.ToDoItem{
-		ItemId:      id,
-		Title:       newTitle,
-		Description: newDescription,
-	})
+func (uC *UseCase)UpdateItem(id int,newTitle string,newDescription string)model.IToDoItem{
+	return uC.repository.Update(id,model.New(id,newTitle,newDescription))
 }
 
-func(uC *UseCase)GetItem(id int)model.ToDoItem{
+func(uC *UseCase)GetItem(id int)model.IToDoItem{
 	
 	for _,v := range uC.repository.GetAll(){
-		if v.ItemId == id{
+		if v.GetItemId() == id{
 			return v
 		}
 	}
-	return model.ToDoItem{
-		ItemId:      0,
-		Title:       "",
-		Description: "",
-	}
+	return model.New(0,"","")
 }
 
 func(uC *UseCase)GetAll(){
