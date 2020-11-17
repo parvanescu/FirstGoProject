@@ -36,22 +36,24 @@ func (uC *UseCase)AddItem(id int,title string,description string){
 }
 
 func (uC *UseCase)DeleteItem(id int)model.ToDoItem{
-	return model.ToDoItem{
-		ItemId:      0,
-		Title:       "",
-		Description: "",
-	}
+	return uC.repository.Delete(id)
 }
 
 func (uC *UseCase)UpdateItem(id int,newTitle string,newDescription string)model.ToDoItem{
-	return model.ToDoItem{
-		ItemId:      0,
-		Title:       "",
-		Description: "",
-	}
+	return uC.repository.Update(id,model.ToDoItem{
+		ItemId:      id,
+		Title:       newTitle,
+		Description: newDescription,
+	})
 }
 
 func(uC *UseCase)GetItem(id int)model.ToDoItem{
+	
+	for _,v := range uC.repository.GetAll(){
+		if v.ItemId == id{
+			return v
+		}
+	}
 	return model.ToDoItem{
 		ItemId:      0,
 		Title:       "",
