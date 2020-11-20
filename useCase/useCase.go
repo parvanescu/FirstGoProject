@@ -1,53 +1,56 @@
 package useCase
 
 import (
-	"ExGabi/interfaces"
 	"ExGabi/model"
+	"ExGabi/repository"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type IUseCase interface {
+	AddItem(title string,description string)
+	DeleteItem(id primitive.ObjectID)model.Item
+	UpdateItem(id primitive.ObjectID,newTitle string,newDescription string)model.Item
+	GetItem(id primitive.ObjectID)model.Item
+	GetAll() //[]model.Item
+}
+
 type UseCase struct{
-	itemRepository interfaces.IRepository
-	userRepository interfaces.IRepository
+	itemRepository repository.IRepository
 }
 
-func New(itemRepo interfaces.IRepository,userRepo interfaces.IRepository)interfaces.IUseCase{
-	return &UseCase{itemRepo,userRepo}
-}
-
-func (uC *UseCase)Init(repository interfaces.IRepository){
-	uC.itemRepository = repository
+func New(repo repository.IRepository)IUseCase{
+	return &UseCase{repo}
 }
 
 func (uC *UseCase)AddItem(title string,description string){
-	var item model.ToDoItem = model.New(title,description)
+	var item model.Item = model.NewItem(title,description)
 	uC.itemRepository.Add(item)
 }
 
-func (uC *UseCase)DeleteItem(id primitive.ObjectID)model.ToDoItem{
+func (uC *UseCase)DeleteItem(id primitive.ObjectID)model.Item {
 	return uC.itemRepository.Delete(id)
 }
 
-func (uC *UseCase)UpdateItem(id primitive.ObjectID,newTitle string,newDescription string)model.ToDoItem{
-	return uC.itemRepository.Update(id,model.New(newTitle,newDescription))
+func (uC *UseCase)UpdateItem(id primitive.ObjectID,newTitle string,newDescription string)model.Item {
+	return uC.itemRepository.Update(id,model.NewItem(newTitle,newDescription))
 }
 
-func(uC *UseCase)GetItem(id primitive.ObjectID)model.ToDoItem{
+func(uC *UseCase)GetItem(id primitive.ObjectID)model.Item {
 	
 	for _,v := range uC.itemRepository.GetAll(){
-		if v.GetItemId() == id{
+		if v.ItemId == id{
 			return v
 		}
 	}
-	return model.New("","")
+	return model.NewItem("","")
 }
 
 func(uC *UseCase)GetAll(){
 	items := uC.itemRepository.GetAll()
 	for _,v := range items{
-		fmt.Println(v.GetItemId().Hex())
-		fmt.Println(v.GetTitle())
-		fmt.Println(v.GetDescription())
+		fmt.Println(v.ItemId.Hex())
+		fmt.Println(v.Title)
+		fmt.Println(v.Description)
 	}
 }

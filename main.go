@@ -2,7 +2,7 @@ package main
 
 import (
 	"ExGabi/interfaces"
-	"ExGabi/itemRepository"
+	"ExGabi/repository"
 	"ExGabi/useCase"
 	"context"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,8 +18,8 @@ func main(){
 	if err != nil{
 		panic(err)
 	}
-	var repo interfaces.IRepository = itemRepository.New(client.Database("DB_ToDoItem").Collection("ToDo_Collection"),ctx)
-	var uC interfaces.IUseCase = useCase.New(repo)
+	var repo interfaces.IRepository = repository.New(client.Database("DB_ToDoItem").Collection("ToDo_Collection"),ctx)
+	var uC interfaces.IUseCase = useCase.New(repo,repo)
 	//uC.AddItem("Title1","Description1")
 	//uC.AddItem("Title2","Description2")
 	//uC.AddItem("Title3","Description3")
