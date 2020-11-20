@@ -25,20 +25,20 @@ func New(repo repository.IRepository)IUseCase{
 
 func (uC *UseCase)AddItem(title string,description string){
 	var item model.Item = model.NewItem(title,description)
-	uC.itemRepository.Add(item)
+	uC.itemRepository.AddItem(item)
 }
 
 func (uC *UseCase)DeleteItem(id primitive.ObjectID)model.Item {
-	return uC.itemRepository.Delete(id)
+	return uC.itemRepository.DeleteItem(id)
 }
 
 func (uC *UseCase)UpdateItem(id primitive.ObjectID,newTitle string,newDescription string)model.Item {
-	return uC.itemRepository.Update(id,model.NewItem(newTitle,newDescription))
+	return uC.itemRepository.UpdateItem(id,model.NewItem(newTitle,newDescription))
 }
 
 func(uC *UseCase)GetItem(id primitive.ObjectID)model.Item {
 	
-	for _,v := range uC.itemRepository.GetAll(){
+	for _,v := range uC.itemRepository.GetAllItems(){
 		if v.ItemId == id{
 			return v
 		}
@@ -47,7 +47,7 @@ func(uC *UseCase)GetItem(id primitive.ObjectID)model.Item {
 }
 
 func(uC *UseCase)GetAll(){
-	items := uC.itemRepository.GetAll()
+	items := uC.itemRepository.GetAllItems()
 	for _,v := range items{
 		fmt.Println(v.ItemId.Hex())
 		fmt.Println(v.Title)

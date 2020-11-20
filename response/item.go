@@ -1,11 +1,9 @@
-package model
+package response
 
-import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
+import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type Item struct{
-	ItemId      primitive.ObjectID				`bson:"_id,omitempty" json:"item_id"`
+	ItemId      primitive.ObjectID				`bson:"_id,omitempty" json:"_id"`
 	Title       string							`bson:"title,omitempty" json:"title"`
 	Description string							`bson:"description,omitempty" json:"description"`
 }
@@ -16,5 +14,3 @@ func NewItem(title string,description string) Item {
 		Description: description,
 	}
 }
-
-

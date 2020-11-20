@@ -1,7 +1,6 @@
 package main
 
 import (
-	"ExGabi/interfaces"
 	"ExGabi/repository"
 	"ExGabi/useCase"
 	"context"
@@ -12,14 +11,14 @@ import (
 
 func main(){
 	uri := "mongodb+srv://UserToDoList:ToDoList123@firstcluster.cwp9s.mongodb.net/DB_ToDoItem?retryWrites=true&w=majority"
-	ctx,cancel := context.WithTimeout(context.Background(),10*time.Second)
+	ctx,cancel := context.WithTimeout(context.TODO(),10*time.Second)
 	defer cancel()
 	client,err := mongo.Connect(ctx,options.Client().ApplyURI(uri))
 	if err != nil{
 		panic(err)
 	}
-	var repo interfaces.IRepository = repository.New(client.Database("DB_ToDoItem").Collection("ToDo_Collection"),ctx)
-	var uC interfaces.IUseCase = useCase.New(repo,repo)
+	var repo repository.IRepository = repository.New(client)
+	var uC useCase.IUseCase = useCase.New(repo)
 	//uC.AddItem("Title1","Description1")
 	//uC.AddItem("Title2","Description2")
 	//uC.AddItem("Title3","Description3")

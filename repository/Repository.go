@@ -11,62 +11,61 @@ import (
 
 //mongodb+srv://UserToDoList:<password>@firstcluster.cwp9s.mongodb.net/<dbname>?retryWrites=true&w=majority
 type IRepository interface{
-	Add(item model.Item)
-	Delete(id primitive.ObjectID)model.Item
-	Update(id primitive.ObjectID,newItem model.Item)model.Item
-	GetAll() []model.Item
+	AddItem(item model.Item)
+	DeleteItem(id primitive.ObjectID)model.Item
+	UpdateItem(id primitive.ObjectID,newItem model.Item)model.Item
+	GetAllItems() []model.Item
 }
 
-
-type ItemRepository struct{
-	collection mongo.Collection
-	ctx context.Context
+type Repository struct{
+	client mongo.Client
 }
 
-func New(collection *mongo.Collection,context context.Context)IRepository{
+func New(client *mongo.Client)IRepository{
 	fmt.Println("Repo initialized")
-	repo := ItemRepository{*collection,context}
+	repo := Repository{*client}
 	return &repo
 }
 
 
-func (r *ItemRepository)Add(item model.Item){
-	_,err :=r.collection.InsertOne(context.Background(),item)//add result to a list of user posts
+func (r *Repository)AddItem(item model.Item){
+	itemCollection := r.client.Database("DB_ToDoItem").Collection("ToDo_Collection")
+	_,err :=itemCollection.InsertOne(context.TODO(),item)//add result to a list of user posts
 	if err!=nil{
 		panic(err)
 	}
-
 }
 
-func (r *ItemRepository)Delete(id primitive.ObjectID)model.Item {
-	//opts := options.FindOneAndDelete().SetProjection(bson.D{{"title", 1}, {"description", 1}})
+func (r *Repository)DeleteItem(id primitive.ObjectID)model.Item {
+	itemCollection := r.client.Database("DB_ToDoItem").Collection("ToDo_Collection")
 	var deletedItem model.Item
-	err :=r.collection.FindOneAndDelete(r.ctx,bson.D{{"_id",id}}).Decode(&deletedItem)
+	err :=itemCollection.FindOneAndDelete(context.TODO(),bson.D{{"_id",id}}).Decode(&deletedItem)
 	if err !=nil{
 		panic(err)
 	}
 	return deletedItem
 }
 
-func (r *ItemRepository)Update(id primitive.ObjectID,newItem model.Item)model.Item {
+func (r *Repository)UpdateItem(id primitive.ObjectID,newItem model.Item)model.Item {
+	itemCollection := r.client.Database("DB_ToDoItem").Collection("ToDo_Collection")
 	var updatedItem model.Item
-	err :=r.collection.FindOneAndReplace(r.ctx,bson.D{{"_id",id}},newItem).Decode(&updatedItem)
+	err :=itemCollection.FindOneAndReplace(context.TODO(),bson.D{{"_id",id}},newItem).Decode(&updatedItem)
 	if err !=nil{
 		panic(err)
 	}
 	return updatedItem
 }
 
-func (r *ItemRepository)GetAll() []model.Item {
-
-	cursor,err :=r.collection.Find(context.TODO(),bson.D{})
+func (r *Repository)GetAllItems() []model.Item {
+	itemCollection := r.client.Database("DB_ToDoItem").Collection("ToDo_Collection")
+	cursor,err :=itemCollection.Find(context.TODO(),bson.D{})
 	if err != nil{
 		panic(err)
 	}
-	defer cursor.Close(context.Background())
+	defer cursor.Close(context.TODO())
 
 	var allItems []model.Item
-	err = cursor.All(r.ctx,&allItems)
+	err = cursor.All(context.TODO(),&allItems)
 	if err != nil{
 		panic(err)
 	}
