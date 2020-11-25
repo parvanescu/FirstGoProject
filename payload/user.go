@@ -1,22 +1,18 @@
-package response
+package payload
 
-import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
+import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type User struct{
 	UserId primitive.ObjectID 				`bson:"_id,omitempty" json:"user_id"`
 	UserName string							`bson:"name,omitempty" json:"user_name"`
+	Password string							`bson:"password,omitempty" json:"password"`
 	Status bool                             `bson:"status" json:"status"`
-	Items []Item							//`bson:"-" json:"-"`
 }
 
-func NewUser(userId primitive.ObjectID,userName string,status bool,items []Item) User{
+func NewUser(name string,password string) User{
 	return User{
-		userId,
-		userName,
-		status,
-		items,
+		UserName: name,
+		Password: password,
+		Status: false,
 	}
 }
-
