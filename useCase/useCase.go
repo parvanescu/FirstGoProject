@@ -20,10 +20,27 @@ func New(repo repository.IRepository)IUseCase{
 
 func (uC *UseCase)AddItem(item payload.Item){
 	uC.itemRepository.AddItem(item)
+	status,err := uC.itemRepository.GetUserStatus(item.UserId)
+	if err != nil{
+		panic(err)
+	}
+	if status == false{
+		err :=uC.itemRepository.SetUserStatus(item.UserId,true)
+		if err != nil{
+			panic(err)
+		}
+	}
 }
 
 func (uC *UseCase)DeleteItem(userId primitive.ObjectID,itemId primitive.ObjectID)error {
 	err :=uC.itemRepository.DeleteItem(userId,itemId)
+	user := uC.itemRepository.GetUserById(userId)
+	if len(user.Items) == 0{
+		err := uC.itemRepository.SetUserStatus(userId,false)
+		if err != nil{
+			panic(err)
+		}
+	}
 	return err
 }
 

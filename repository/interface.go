@@ -18,4 +18,7 @@ type IRepository interface{
 	UpdateUser(id primitive.ObjectID,user payload.User)(response.User,error)
 	GetAllUsers() *[]response.User
 	GetUserById(id primitive.ObjectID) response.User
+
+	GetUserStatus(id primitive.ObjectID)(bool,error)
+	SetUserStatus(id primitive.ObjectID,status bool)error
 }

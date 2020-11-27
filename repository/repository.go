@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	options2 "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 //mongodb+srv://UserToDoList:<password>@firstcluster.cwp9s.mongodb.net/<dbname>?retryWrites=true&w=majority
@@ -153,4 +154,18 @@ func (r *Repository)GetUserById(id primitive.ObjectID) response.User{
 	return (*user)[0]
 
 	//TODO: new querry
+}
+
+func (r *Repository)GetUserStatus(id primitive.ObjectID)(bool,error){
+	userCollection := r.client.Database("ToDoApp").Collection("Users")
+	projection := bson.D{{"status",1}}
+	var status struct{Status bool `bson:"status" json:"status"`}
+	err :=userCollection.FindOne(context.TODO(),bson.D{{"_id",id}},options2.FindOne().SetProjection(projection)).Decode(&status)
+	return status.Status,err
+}
+
+func (r *Repository)SetUserStatus(id primitive.ObjectID, status bool)error{
+	userCollection := r.client.Database("ToDoApp").Collection("Users")
+	_,err :=userCollection.UpdateOne(context.TODO(),bson.D{{"_id",id}},bson.M{"$set":bson.M{"status":status}})
+	return err
 }
