@@ -4,7 +4,7 @@ import (
 	"ExGabi/payload"
 	"ExGabi/repository"
 	"ExGabi/response"
-	"fmt"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -18,29 +18,13 @@ func New(repo repository.IRepository)IUseCase{
 	return &UseCase{repo}
 }
 
-func (uC *UseCase)AddItem(item payload.Item){
-	uC.itemRepository.AddItem(item)
-	status,err := uC.itemRepository.GetUserStatus(item.UserId)
-	if err != nil{
-		panic(err)
-	}
-	if status == false{
-		err :=uC.itemRepository.SetUserStatus(item.UserId,true)
-		if err != nil{
-			panic(err)
-		}
-	}
+func (uC *UseCase)AddItem(item payload.Item)(primitive.ObjectID,error){
+	id,err := uC.itemRepository.AddItem(item)
+	return id,err
 }
 
 func (uC *UseCase)DeleteItem(userId primitive.ObjectID,itemId primitive.ObjectID)error {
 	err :=uC.itemRepository.DeleteItem(userId,itemId)
-	user := uC.itemRepository.GetUserById(userId)
-	if len(user.Items) == 0{
-		err := uC.itemRepository.SetUserStatus(userId,false)
-		if err != nil{
-			panic(err)
-		}
-	}
 	return err
 }
 
@@ -49,39 +33,37 @@ func (uC *UseCase)UpdateItem(id primitive.ObjectID,item payload.Item)(response.I
 	return newItem,err
 }
 
-func(uC *UseCase)GetItem(id primitive.ObjectID)response.Item {
-	
-	for _,v := range *uC.itemRepository.GetAllItems(){
+func(uC *UseCase)GetItem(id primitive.ObjectID)(response.Item,error) {
+	list,err := uC.itemRepository.GetAllItems();
+	if err!=nil{
+		return response.Item{}, err
+	}
+	for _,v := range *list{
 		if v.ItemId == id{
-			return v
+			return v,nil
 		}
 	}
-	return response.NewItem("","")
+	return response.Item{}, errors.New("user not found")
 }
 
-func(uC *UseCase)GetAllItems() {
-	items := *uC.itemRepository.GetAllItems()
-	for _, v := range items {
-		fmt.Println(v.ItemId.Hex())
-		fmt.Println(v.Title)
-		fmt.Println(v.Description)
+func(uC *UseCase)GetAllItems()(*[]response.Item,error) {
+	items,err := uC.itemRepository.GetAllItems()
+	if err != nil{
+		return nil, err
 	}
+	return items,nil
 }
 
-func(uC *UseCase) AddUser(user payload.User){
-	uC.itemRepository.AddUser(user) //returns object id of user
+func(uC *UseCase) AddUser(user payload.User)(primitive.ObjectID,error){
+	id,err :=uC.itemRepository.AddUser(user)
+	if err != nil{
+		return [12]byte{}, err
 	}
+	return id,nil
+}
 
 func(uC *UseCase)DeleteUser(id primitive.ObjectID)error{
-	var err error
-	user := uC.itemRepository.GetUserById(id)
-	for _,v := range user.Items{
-		err =uC.DeleteItem(id,v.ItemId)
-	}
-	if err != nil{
-		return err
-	}
-	err = uC.itemRepository.DeleteUser(id)
+	err := uC.itemRepository.DeleteUser(id)
 	return err
 	}
 
@@ -90,16 +72,15 @@ func(uC *UseCase)UpdateUser(id primitive.ObjectID,user payload.User)(response.Us
 	return newUser,err
 }
 
-func(uC *UseCase)GetUser(id primitive.ObjectID)response.User {
+func(uC *UseCase)GetUser(id primitive.ObjectID)(response.User,error) {
 	return uC.itemRepository.GetUserById(id)
 	}
 
-func(uC *UseCase)GetAllUsers() {
-	users := *uC.itemRepository.GetAllUsers()
-	for _,v := range users  {
-		fmt.Println(v.UserId.Hex())
-		fmt.Println(v.UserName)
-		fmt.Println(v.Items)
+func(uC *UseCase)GetAllUsers()(*[]response.User,error) {
+	users,err := uC.itemRepository.GetAllUsers()
+	if err != nil{
+		return nil,err
 	}
-	}
+	return users,nil
+}
 

@@ -7,15 +7,15 @@ import (
 )
 
 type IUseCase interface {
-	AddItem(item payload.Item)
+	AddItem(item payload.Item)(primitive.ObjectID,error)
 	DeleteItem(userId primitive.ObjectID,itemId primitive.ObjectID)error
 	UpdateItem(id primitive.ObjectID,item payload.Item)(response.Item,error)
-	GetItem(id primitive.ObjectID)response.Item
-	GetAllItems() //[]model.Item
+	GetItem(id primitive.ObjectID)(response.Item,error)
+	GetAllItems() (*[]response.Item,error)
 
-	AddUser(user payload.User)
+	AddUser(user payload.User)(primitive.ObjectID,error)
 	DeleteUser(id primitive.ObjectID)error
 	UpdateUser(id primitive.ObjectID,user payload.User)(response.User,error)
-	GetUser(id primitive.ObjectID)response.User
-	GetAllUsers() //[]response.User
+	GetUser(id primitive.ObjectID)(response.User,error)
+	GetAllUsers() (*[]response.User,error)
 }
