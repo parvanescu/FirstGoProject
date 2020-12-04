@@ -18,32 +18,32 @@ func New(repo repository.IRepository)IUseCase{
 	return &UseCase{repo}
 }
 
-func (uC *UseCase)AddItem(item payload.Item)(primitive.ObjectID,error){
+func (uC *UseCase)AddItem(item *payload.Item)(primitive.ObjectID,error){
 	id,err := uC.itemRepository.AddItem(item)
 	return id,err
 }
 
-func (uC *UseCase)DeleteItem(userId primitive.ObjectID,itemId primitive.ObjectID)error {
-	err :=uC.itemRepository.DeleteItem(userId,itemId)
+func (uC *UseCase)DeleteItem(item *payload.Item)error {
+	err :=uC.itemRepository.DeleteItem(item)
 	return err
 }
 
-func (uC *UseCase)UpdateItem(id primitive.ObjectID,item payload.Item)(response.Item,error) {
-	newItem,err := uC.itemRepository.UpdateItem(id,item)
+func (uC *UseCase)UpdateItem(item *payload.Item)(*response.Item,error) {
+	newItem,err := uC.itemRepository.UpdateItem(item)
 	return newItem,err
 }
 
-func(uC *UseCase)GetItem(id primitive.ObjectID)(response.Item,error) {
-	list,err := uC.itemRepository.GetAllItems();
+func(uC *UseCase)GetItemById(id primitive.ObjectID)(*response.Item,error) {
+	list,err := uC.itemRepository.GetAllItems()
 	if err!=nil{
-		return response.Item{}, err
+		return &response.Item{}, err
 	}
 	for _,v := range *list{
-		if v.ItemId == id{
-			return v,nil
+		if v.Id == id{
+			return &v,nil
 		}
 	}
-	return response.Item{}, errors.New("user not found")
+	return &response.Item{}, errors.New("user not found")
 }
 
 func(uC *UseCase)GetAllItems()(*[]response.Item,error) {
@@ -54,7 +54,7 @@ func(uC *UseCase)GetAllItems()(*[]response.Item,error) {
 	return items,nil
 }
 
-func(uC *UseCase) AddUser(user payload.User)(primitive.ObjectID,error){
+func(uC *UseCase) AddUser(user *payload.User)(primitive.ObjectID,error){
 	id,err :=uC.itemRepository.AddUser(user)
 	if err != nil{
 		return [12]byte{}, err
@@ -62,17 +62,17 @@ func(uC *UseCase) AddUser(user payload.User)(primitive.ObjectID,error){
 	return id,nil
 }
 
-func(uC *UseCase)DeleteUser(id primitive.ObjectID)error{
-	err := uC.itemRepository.DeleteUser(id)
+func(uC *UseCase)DeleteUser(user *payload.User)error{
+	err := uC.itemRepository.DeleteUser(user)
 	return err
 	}
 
-func(uC *UseCase)UpdateUser(id primitive.ObjectID,user payload.User)(response.User,error) {
-	newUser,err:= uC.itemRepository.UpdateUser(id,user)
+func(uC *UseCase)UpdateUser(user *payload.User)(*response.User,error) {
+	newUser,err:= uC.itemRepository.UpdateUser(user)
 	return newUser,err
 }
 
-func(uC *UseCase)GetUser(id primitive.ObjectID)(response.User,error) {
+func(uC *UseCase)GetUserById(id primitive.ObjectID)(*response.User,error) {
 	return uC.itemRepository.GetUserById(id)
 	}
 

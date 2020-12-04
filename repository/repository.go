@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	options2 "go.mongodb.org/mongo-driver/mongo/options"
+	_ "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 //mongodb+srv://UserToDoList:<password>@firstcluster.cwp9s.mongodb.net/<dbname>?retryWrites=true&w=majority
@@ -25,80 +25,67 @@ func New(client *mongo.Client)IRepository{
 }
 
 
-func (r *Repository)AddItem(item payload.Item)(primitive.ObjectID,error){
-	modelItem := model.NewItem(item.Title,item.Description,item.UserId)
+func (r *Repository)AddItem(item *payload.Item)(primitive.ObjectID,error){
+	newItemId := primitive.ObjectID{}
+	err := r.client.UseSession(context.TODO(), func(sessCtx mongo.SessionContext)error{
+		if err := sessCtx.StartTransaction();err!=nil {
+			return err
+		}
+		itemId,err := r.insertItem(item,sessCtx)
+		if err != nil{
+			_ = sessCtx.AbortTransaction(sessCtx)
+			return err
+		}
+		item.Id=itemId
+		user,err := r.GetUserById(item.UserId)
+		if err != nil{
+			_ = sessCtx.AbortTransaction(sessCtx)
+			return err
+		}
 
-	callback := func(sessCtx mongo.SessionContext) (interface{},error){
-			var id primitive.ObjectID
-			var status bool
-			var err error
-			if id,err  = r.insertItem(modelItem);err != nil{
-				return nil,err
-			}
-
-			if status,err = r.getUserStatus(item.UserId);err != nil{
-				return nil,err
-			}
-			if status == false{
-				if err := r.setUserStatus(item.UserId,true);err !=nil{
-					return nil,err
+		if  user.Status== false{
+			if err := r.setUserStatus(item.UserId,true,sessCtx);err !=nil{
+					return err
 				}
-			}
-			return id,nil
-	}
-
-	session, err:= r.client.StartSession()
-	if err !=nil{
-		return [12]byte{}, err
-	}
-	defer session.EndSession(context.TODO())
-
-	result,err := session.WithTransaction(context.TODO(),callback)
-	if err != nil{
-		return [12]byte{}, err
-	}
-	return result.(primitive.ObjectID),nil
+		}
+		newItemId = itemId
+		_ = sessCtx.CommitTransaction(sessCtx)
+		return nil
+	})
+	return newItemId,err
 
 }
 
-func (r *Repository)DeleteItem(userId primitive.ObjectID,id primitive.ObjectID)error {
-	itemCollection := r.client.Database("ToDoApp").Collection("Items")
-	callback := func(sessCtx mongo.SessionContext) (interface{},error){
-		var deletedItem response.Item
-		err :=itemCollection.FindOneAndDelete(context.TODO(),bson.D{{"_id",id},{"userId",userId}}).Decode(&deletedItem)
-		if err !=nil{
-			return nil,err
+func (r *Repository)DeleteItem(item *payload.Item)error {
+	err := r.client.UseSession(context.TODO(), func(sessCtx mongo.SessionContext)error{
+		deletedItem,err := r.removeItem(item,sessCtx)
+		if err != nil{
+			_ = sessCtx.AbortTransaction(sessCtx)
+			return err
 		}
 		user,err := r.GetUserById(deletedItem.UserId)
 		if err != nil{
-			return nil, err
+			_ = sessCtx.AbortTransaction(sessCtx)
+			return err
 		}
 		if len(user.Items)==0{
-			err:= r.setUserStatus(userId,false)
+			err:= r.setUserStatus(item.UserId,false,sessCtx)
 			if err != nil{
-				return nil, err
+				_ = sessCtx.AbortTransaction(sessCtx)
+				return err
 			}
 		}
-		return nil, nil
-	}
-	session, err:= r.client.StartSession()
-	if err !=nil{
-		return err
-	}
-	defer session.EndSession(context.TODO())
-
-	_,err = session.WithTransaction(context.TODO(),callback)
-	if err != nil{
-		return err
-	}
-	return nil
+		_ = sessCtx.CommitTransaction(sessCtx)
+		return nil
+	})
+	return err
 }
 
-func (r *Repository)UpdateItem(id primitive.ObjectID,newItem payload.Item)(response.Item,error) {
+func (r *Repository)UpdateItem(item *payload.Item)(*response.Item,error) {
 	itemCollection := r.client.Database("ToDoApp").Collection("Items")
-	modelItem := model.Item{ItemId: id,Title: newItem.Title,Description: newItem.Description,UserId: newItem.UserId}
-	var updatedItem response.Item
-	err :=itemCollection.FindOneAndReplace(context.TODO(),bson.D{{"_id",id}},modelItem).Decode(&updatedItem)
+	modelItem := model.Item{Id: item.Id,Title: item.Title,Description: item.Description,UserId: item.UserId}
+	var updatedItem *response.Item
+	err :=itemCollection.FindOneAndReplace(context.TODO(),bson.D{{"_id",item.Id}},modelItem).Decode(updatedItem)
 	return updatedItem,err
 }
 
@@ -128,9 +115,13 @@ func (r *Repository)GetItemById(id primitive.ObjectID) (*response.Item,error){
 	return item,nil
 }
 
-func (r *Repository)AddUser(user payload.User)(primitive.ObjectID,error){
+func (r *Repository)AddUser(user *payload.User)(primitive.ObjectID,error){
 	userCollection := r.client.Database("ToDoApp").Collection("Users")
-	modelUser := model.NewUser(user.UserName,user.Password,user.Status)
+	modelUser := model.User{
+		UserName: user.UserName,
+		Password: user.Password,
+		Status:   false,
+	}
 	res,err :=userCollection.InsertOne(context.TODO(),modelUser)
 	if err!=nil{
 		return [12]byte{}, err
@@ -138,38 +129,32 @@ func (r *Repository)AddUser(user payload.User)(primitive.ObjectID,error){
 	id := res.InsertedID.(primitive.ObjectID)
 	return id,nil
 }
-func (r *Repository)DeleteUser(id primitive.ObjectID)error{
-	itemCollection := r.client.Database("ToDoApp").Collection("Users")
-	callback := func(sessCtx mongo.SessionContext) (interface{},error){
-		var deletedUser response.User
-		err :=itemCollection.FindOneAndDelete(context.TODO(),bson.D{{"_id",id}}).Decode(&deletedUser)
+func (r *Repository)DeleteUser(user *payload.User)error{
+	err := r.client.UseSession(context.TODO(),func(sessCtx mongo.SessionContext)error{
+		deletedUser,err := r.removeUser(user,sessCtx)
 		if err != nil{
-			return nil, err
+			_ = sessCtx.AbortTransaction(sessCtx)
+			return err
 		}
 		for _,v := range deletedUser.Items{
-			err=r.DeleteItem(id,v.ItemId)
+			_,err = r.removeItem(&payload.Item{
+				Id:     v.Id,
+				UserId: v.UserId,
+			},sessCtx)
 			if err != nil{
-				return nil, err
+				_ = sessCtx.AbortTransaction(sessCtx)
+				return err
 			}
 		}
-		return nil, nil
-	}
-	session, err:= r.client.StartSession()
-	if err !=nil{
-		return err
-	}
-	defer session.EndSession(context.TODO())
-
-	_,err = session.WithTransaction(context.TODO(),callback)
-	if err != nil{
-		return err
-	}
-	return nil
+		_ = sessCtx.CommitTransaction(sessCtx)
+		return nil
+	})
+	return err
 }
-func (r *Repository)UpdateUser(id primitive.ObjectID,user payload.User)(response.User,error){
+func (r *Repository)UpdateUser(user *payload.User)(*response.User,error){
 	itemCollection := r.client.Database("ToDoApp").Collection("Users")
-	var updatedItem response.User
-	err :=itemCollection.FindOneAndReplace(context.TODO(),bson.D{{"_id",id}},user).Decode(&updatedItem)
+	var updatedItem *response.User
+	err :=itemCollection.FindOneAndReplace(context.TODO(),bson.D{{"_id",user.Id}},user).Decode(updatedItem)
 	if err !=nil{
 		return updatedItem,err
 	}
@@ -190,18 +175,16 @@ func (r *Repository)GetAllUsers() (*[]response.User,error){
 	}
 	defer cursor.Close(context.TODO())
 
-	allItems := new([]response.User)
-	err = cursor.All(context.TODO(),allItems)
+	users := new([]response.User)
+	err = cursor.All(context.TODO(),users)
 	if err != nil{
 		return nil, err
 	}
 
-	return allItems,nil
+	return users,nil
 }
-func (r *Repository)GetUserById(id primitive.ObjectID) (response.User,error){
+func (r *Repository)GetUserById(id primitive.ObjectID) (*response.User,error){
 	itemCollection := r.client.Database("ToDoApp").Collection("Users")
-	//var user model.User
-	//err :=itemCollection.FindOne(context.TODO(),bson.D{{"_id",id}}).Decode(&user)
 	query := []bson.M{{
 		"$lookup":bson.M{
 			"from" : "Items",
@@ -214,35 +197,25 @@ func (r *Repository)GetUserById(id primitive.ObjectID) (response.User,error){
 		}}}
 	cursor,err:= itemCollection.Aggregate(context.TODO(),query)
 	if err !=nil{
-		return response.User{}, err
+		return &response.User{}, err
 	}
-	user := new([]response.User)
-	err = cursor.All(context.TODO(),user)
-	if err != nil{
-		return response.User{}, err
+	var users *[]response.User
+	err = cursor.All(context.TODO(),users)
+	if err != nil {
+		return &response.User{}, err
 	}
-	return (*user)[0],nil
-
-	//TODO: new querry
+	return &(*users)[0],nil
 }
 
-func (r *Repository)getUserStatus(id primitive.ObjectID)(bool,error){
+func (r *Repository)setUserStatus(id primitive.ObjectID, status bool,ctx context.Context)error{
 	userCollection := r.client.Database("ToDoApp").Collection("Users")
-	projection := bson.D{{"status",1}}
-	var status struct{Status bool `bson:"status" json:"status"`}
-	err :=userCollection.FindOne(context.TODO(),bson.D{{"_id",id}},options2.FindOne().SetProjection(projection)).Decode(&status)
-	return status.Status,err
-}
-
-func (r *Repository)setUserStatus(id primitive.ObjectID, status bool)error{
-	userCollection := r.client.Database("ToDoApp").Collection("Users")
-	_,err :=userCollection.UpdateOne(context.TODO(),bson.D{{"_id",id}},bson.M{"$set":bson.M{"status":status}})
+	_,err :=userCollection.UpdateOne(ctx,bson.D{{"_id",id}},bson.M{"$set":bson.M{"status":status}})
 	return err
 }
 
-func (r *Repository)insertItem(item model.Item)(primitive.ObjectID,error){
+func (r *Repository)insertItem(item *payload.Item,ctx context.Context)(primitive.ObjectID,error){
 	itemCollection := r.client.Database("ToDoApp").Collection("Items")
-	res,err :=itemCollection.InsertOne(context.TODO(),item)
+	res,err :=itemCollection.InsertOne(ctx,item)
 	if err != nil{
 		return [12]byte{}, err
 	}
@@ -250,21 +223,22 @@ func (r *Repository)insertItem(item model.Item)(primitive.ObjectID,error){
 	return id,err
 }
 
-//func (r *Repository)addItemTransaction(sessionContext mongo.SessionContext)(interface{},error){
-//	var id primitive.ObjectID
-//	var status bool
-//	var err error
-//	if id,err  = r.insertItem(modelItem);err != nil{
-//		return nil,err
-//	}
-//
-//	if status,err = r.GetUserStatus(item.UserId);err != nil{
-//		return nil,err
-//	}
-//	if status == false{
-//		if err := r.SetUserStatus(item.UserId,true);err !=nil{
-//			return nil,err
-//		}
-//	}
-//	return id,nil
-//}
+func (r *Repository)removeItem(item *payload.Item,ctx context.Context)(*response.Item,error){
+	itemCollection := r.client.Database("ToDoApp").Collection("Items")
+	var deletedItem *response.Item
+	err :=itemCollection.FindOneAndDelete(ctx,bson.D{{"_id",item.Id},{"userId",item.UserId}}).Decode(deletedItem)
+	if err !=nil{
+		return nil, err
+	}
+	return deletedItem,nil
+}
+
+func (r * Repository)removeUser(user *payload.User,ctx context.Context)(*response.User,error){
+	userCollection := r.client.Database("ToDoApp").Collection("Users")
+	var deletedUser *response.User
+	err :=userCollection.FindOneAndDelete(ctx,bson.D{{"_id",user.Id}}).Decode(deletedUser)
+	if err != nil{
+		return nil, err
+	}
+	return deletedUser,nil
+}
