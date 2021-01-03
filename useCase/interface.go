@@ -3,19 +3,20 @@ package useCase
 import (
 	"ExGabi/payload"
 	"ExGabi/response"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type IUseCase interface {
-	AddItem(item *payload.Item)(primitive.ObjectID,error)
-	DeleteItem(item *payload.Item)error
+	AddItem(item *payload.Item)(*response.Item,error)
+	DeleteItem(item *payload.Item)(string,error)
 	UpdateItem(item *payload.Item)(*response.Item,error)
-	GetItemById(id primitive.ObjectID)(*response.Item,error)
+	GetItemById(item *payload.Item)(*response.Item,error)
 	GetAllItems() (*[]response.Item,error)
 
-	AddUser(user *payload.User)(primitive.ObjectID,error)
-	DeleteUser(user *payload.User)error
+	DeleteUser(user *payload.User)(string,error)
 	UpdateUser(user *payload.User)(*response.User,error)
-	GetUserById(id primitive.ObjectID)(*response.User,error)
+	GetUserById(user *payload.User)(*response.User,error)
 	GetAllUsers() (*[]response.User,error)
+
+	Register(user *payload.User)(string,error)
+	Login(user *payload.User)(string,error)
 }

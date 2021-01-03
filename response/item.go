@@ -7,4 +7,5 @@ type Item struct{
 	Title       string							`bson:"title,omitempty" json:"title"`
 	Description string							`bson:"description,omitempty" json:"description"`
 	UserId 		primitive.ObjectID				`bson:"userId" json:"userId"`
+	Token 		string                      `bson:"token" json:"token"`
 }

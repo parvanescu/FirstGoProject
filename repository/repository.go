@@ -118,7 +118,9 @@ func (r *Repository)GetItemById(id primitive.ObjectID) (*response.Item,error){
 func (r *Repository)AddUser(user *payload.User)(primitive.ObjectID,error){
 	userCollection := r.client.Database("ToDoApp").Collection("Users")
 	modelUser := model.User{
-		UserName: user.UserName,
+		FirstName: user.FirstName,
+		LastName: user.LastName,
+		Email: user.Email,
 		Password: user.Password,
 		Status:   false,
 	}
@@ -199,7 +201,32 @@ func (r *Repository)GetUserById(id primitive.ObjectID) (*response.User,error){
 	if err !=nil{
 		return &response.User{}, err
 	}
-	var users *[]response.User
+	users := new([]response.User)
+	err = cursor.All(context.TODO(),users)
+	if err != nil {
+		return &response.User{}, err
+	}
+	return &(*users)[0],nil
+}
+
+func (r *Repository)GetUserByCredentials(user *payload.User)(*response.User,error){
+	itemCollection := r.client.Database("ToDoApp").Collection("Users")
+	query := []bson.M{{
+		"$lookup":bson.M{
+			"from" : "Items",
+			"localField": "_id",
+			"foreignField": "userId",
+			"as": "items",
+		}},
+		{"$match": bson.M{
+			"email": user.Email,
+			"password": user.Password,
+		}}}
+	cursor,err:= itemCollection.Aggregate(context.TODO(),query)
+	if err !=nil{
+		return &response.User{}, err
+	}
+	users := new([]response.User)
 	err = cursor.All(context.TODO(),users)
 	if err != nil {
 		return &response.User{}, err

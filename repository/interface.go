@@ -18,4 +18,5 @@ type IRepository interface{
 	UpdateUser(user *payload.User)(*response.User,error)
 	GetAllUsers() (*[]response.User,error)
 	GetUserById(id primitive.ObjectID) (*response.User,error)
+	GetUserByCredentials(user *payload.User)(*response.User,error)
 }
