@@ -26,7 +26,7 @@ func main(){
 	//uC.AddUser(payload.NewUser("testUser1","testPassword1"))
 	//uC.AddUser(payload.NewUser("testUser2","testPassword2"))
 	//userId,err := primitive.ObjectIDFromHex("5fbe2a3decf018f23f138077")
-	userId2,err := primitive.ObjectIDFromHex("5fbe3039b99d41988d9ed066")
+	//userId2,err := primitive.ObjectIDFromHex("5fbe3039b99d41988d9ed066")
 	//itemId1,err := primitive.ObjectIDFromHex("5fbe84e3a1eb4a237bfff6f0")
 	//itemId2,err := primitive.ObjectIDFromHex("5fbe84f4a1eb4a237bfff6f1")
 	//itemId3,err := primitive.ObjectIDFromHex("5fbe84f7a1eb4a237bfff6f2")
@@ -43,13 +43,13 @@ func main(){
 	//user,err :=uC.UpdateUser(userId2,payload.NewUser("User2","Password2"))
 	//uC.DeleteItem(userId,itemId1)
 	//uC.DeleteItem(userId,itemId2)
-	res,err :=uC.GetUserById(userId2)
-	if err != nil{
-		panic(err)
-	}
-	fmt.Println(res)
-	err =client.Disconnect(ctx)
-	if err !=nil{
-		panic(err)
-	}
+	//res,err :=uC.GetUserById(userId2)
+	//if err != nil{
+	//	panic(err)
+	//}
+	//fmt.Println(res)
+	//err =client.Disconnect(ctx)
+	//if err !=nil{
+	//	panic(err)
+	//}
 }

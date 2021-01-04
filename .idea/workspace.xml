@@ -30,19 +30,15 @@
   <component name="ChangeListManager">
     <list default="true" id="32d5ac43-9cf4-4f7c-8c7d-fc305af74971" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/generated/generated.go" beforeDir="false" afterPath="$PROJECT_DIR$/graph/generated/generated.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/model/models_gen.go" beforeDir="false" afterPath="$PROJECT_DIR$/graph/model/models_gen.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/resolver.go" beforeDir="false" afterPath="$PROJECT_DIR$/graph/resolver.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/schema.graphqls" beforeDir="false" afterPath="$PROJECT_DIR$/graph/schema.graphqls" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/schema.resolvers.go" beforeDir="false" afterPath="$PROJECT_DIR$/graph/schema.resolvers.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model/item.go" beforeDir="false" afterPath="$PROJECT_DIR$/model/item.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/model/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/payload/item.go" beforeDir="false" afterPath="$PROJECT_DIR$/payload/item.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/payload/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/payload/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/repository/interface.go" beforeDir="false" afterPath="$PROJECT_DIR$/repository/interface.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/repository/repository.go" beforeDir="false" afterPath="$PROJECT_DIR$/repository/repository.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/response/item.go" beforeDir="false" afterPath="$PROJECT_DIR$/response/item.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/response/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/response/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/useCase/interface.go" beforeDir="false" afterPath="$PROJECT_DIR$/useCase/interface.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/useCase/useCase.go" beforeDir="false" afterPath="$PROJECT_DIR$/useCase/useCase.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/server.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,6 +65,7 @@
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="DefaultGoTemplateProperty" value="Go File" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
@@ -164,10 +161,10 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="803" y="281" key="refactoring.ChangeSignatureDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1605622328619" />
-    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup" timestamp="1608572047986">
+    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup" timestamp="1609705569343">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1608572047986" />
+    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1609705569343" />
   </component>
   <component name="XDebuggerManager">
     <watches-manager>

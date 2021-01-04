@@ -2,27 +2,65 @@
 #
 # https://gqlgen.com/getting-started/
 
-type Todo {
+type Item {
   id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
+  title: String!
+  description: String!
+  userId: ID!
+  token: String!
 }
 
-type User {
-  id: ID!
-  name: String!
+type User{
+  id:ID!
+  last_name:String!
+  first_name:String!
+  email:String!
+  password: String!
+  status:Boolean!
+  token: String!
+  items: [Item!]!
+}
+
+type Error{
+  message:String!
 }
 
 type Query {
-  todos: [Todo!]!
+  getItemById(item:NewItem!):Item!
+  getAllItems: [Item!]!
+
+  getUserById(user:NewUser!):User!
 }
 
-input NewTodo {
-  text: String!
+input NewItem {
+  title: String!
+  description: String!
   userId: String!
+  token:String!
+}
+
+input NewUser{
+  last_name:String!
+  first_name:String!
+  email:String!
+  password: String!
+  status:Boolean!
+  token: String!
+}
+
+input Login{
+  email:String!
+  password:String!
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
+  addItem(item:NewItem!):Item!
+  deleteItem(item:NewItem!):String!
+  updateItem(item:NewItem!):Item!
+
+  deleteUser(user:NewUser!):String!
+  updateUser(user:NewUser!):User!
+
+  register(user:NewUser!):String!
+  login(user:NewUser!):String!
 }

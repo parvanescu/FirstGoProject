@@ -12,7 +12,7 @@ type User struct{
 	Email string 							`bson:"email" json:"email"`
 	Status bool                             `bson:"status" json:"status"`
 	Items []Item							`bson:"items" json:"items"`
-	Token string
+	Token string							`json:"token"`
 	jwt.StandardClaims
 }
 

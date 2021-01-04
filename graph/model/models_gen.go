@@ -2,19 +2,46 @@
 
 package model
 
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
+type Error struct {
+	Message string `json:"message"`
 }
 
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User *User  `json:"user"`
+type Item struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	UserID      string `json:"userId"`
+	Token       string `json:"token"`
+}
+
+type Login struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type NewItem struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	UserID      string `json:"userId"`
+	Token       string `json:"token"`
+}
+
+type NewUser struct {
+	LastName  string `json:"last_name"`
+	FirstName string `json:"first_name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	Status    bool   `json:"status"`
+	Token     string `json:"token"`
 }
 
 type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID        string  `json:"id"`
+	LastName  string  `json:"last_name"`
+	FirstName string  `json:"first_name"`
+	Email     string  `json:"email"`
+	Password  string  `json:"password"`
+	Status    bool    `json:"status"`
+	Token     string  `json:"token"`
+	Items     []*Item `json:"items"`
 }
