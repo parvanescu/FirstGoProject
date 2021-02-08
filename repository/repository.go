@@ -5,6 +5,7 @@ import (
 	"ExGabi/payload"
 	"ExGabi/response"
 	"context"
+	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -25,26 +26,26 @@ func New(client *mongo.Client)IRepository{
 }
 
 
-func (r *Repository)AddItem(item *payload.Item)(primitive.ObjectID,error){
+func (r *Repository)AddItem(userId primitive.ObjectID,item *payload.Item)(primitive.ObjectID,error){
 	newItemId := primitive.ObjectID{}
 	err := r.client.UseSession(context.TODO(), func(sessCtx mongo.SessionContext)error{
 		if err := sessCtx.StartTransaction();err!=nil {
 			return err
 		}
-		itemId,err := r.insertItem(item,sessCtx)
+		dbItem := &model.Item{Title: item.Title,Description: item.Description,UserId: userId}
+		itemId,err := r.insertItem(dbItem,sessCtx)
 		if err != nil{
 			_ = sessCtx.AbortTransaction(sessCtx)
 			return err
 		}
-		item.Id=itemId
-		user,err := r.GetUserById(item.UserId)
+		user,err := r.GetUserById(userId)
 		if err != nil{
 			_ = sessCtx.AbortTransaction(sessCtx)
 			return err
 		}
 
 		if  user.Status== false{
-			if err := r.setUserStatus(item.UserId,true,sessCtx);err !=nil{
+			if err := r.setUserStatus(userId,true,sessCtx);err !=nil{
 					return err
 				}
 		}
@@ -55,21 +56,20 @@ func (r *Repository)AddItem(item *payload.Item)(primitive.ObjectID,error){
 	return newItemId,err
 
 }
-
-func (r *Repository)DeleteItem(item *payload.Item)error {
+func (r *Repository)DeleteItem(userId primitive.ObjectID,item *payload.Item)error {
 	err := r.client.UseSession(context.TODO(), func(sessCtx mongo.SessionContext)error{
-		deletedItem,err := r.removeItem(item,sessCtx)
+		_,err := r.removeItem(userId,item,sessCtx)
 		if err != nil{
 			_ = sessCtx.AbortTransaction(sessCtx)
 			return err
 		}
-		user,err := r.GetUserById(deletedItem.UserId)
+		user,err := r.GetUserById(userId)
 		if err != nil{
 			_ = sessCtx.AbortTransaction(sessCtx)
 			return err
 		}
 		if len(user.Items)==0{
-			err:= r.setUserStatus(item.UserId,false,sessCtx)
+			err:= r.setUserStatus(userId,false,sessCtx)
 			if err != nil{
 				_ = sessCtx.AbortTransaction(sessCtx)
 				return err
@@ -80,12 +80,14 @@ func (r *Repository)DeleteItem(item *payload.Item)error {
 	})
 	return err
 }
-
-func (r *Repository)UpdateItem(item *payload.Item)(*response.Item,error) {
+func (r *Repository)UpdateItem(userId primitive.ObjectID,item *payload.Item)(*response.Item,error) {
 	itemCollection := r.client.Database("ToDoApp").Collection("Items")
-	modelItem := model.Item{Id: item.Id,Title: item.Title,Description: item.Description,UserId: item.UserId}
-	var updatedItem *response.Item
-	err :=itemCollection.FindOneAndReplace(context.TODO(),bson.D{{"_id",item.Id}},modelItem).Decode(updatedItem)
+	modelItem := model.Item{Id: item.Id,Title: item.Title,Description: item.Description,UserId: userId}
+	updateValue := bson.M{
+		"$set": modelItem,
+	}
+	updatedItem :=&response.Item{}
+	err :=itemCollection.FindOneAndUpdate(context.TODO(),bson.D{{"_id",item.Id}},updateValue).Decode(updatedItem)
 	return updatedItem,err
 }
 
@@ -97,23 +99,50 @@ func (r *Repository)GetAllItems() (*[]response.Item,error) {
 	}
 	defer cursor.Close(context.TODO())
 
-	var allItems = new([]response.Item)
+	allItems := new([]response.Item)
 	err = cursor.All(context.TODO(),allItems)
 	if err != nil{
 		return nil,err
 	}
 	return allItems,nil
 }
+func (r *Repository)GetItemByTitle(item *payload.Item)(*response.Item,error){
+	itemCollection := r.client.Database("ToDoApp").Collection("Items")
+	foundItem := &response.Item{}
+	err :=itemCollection.FindOne(context.TODO(),bson.D{{"title",item.Title}}).Decode(foundItem)
+	if err !=nil {
+		return nil,err
+	}
+	return foundItem,nil
+}
+func (r * Repository)GetItemByDescription(item *payload.Item)(*[]response.Item,error){
+	itemCollection := r.client.Database("ToDoApp").Collection("Items")
+	cursor,err :=itemCollection.Find(context.TODO(),
+		bson.D{{"description",bson.D{
+		{"$regex",item.Description},
+		{"$options","i"}}}})
+	if err != nil{
+		return nil,err
+	}
+	defer cursor.Close(context.TODO())
 
+	allItems := new([]response.Item)
+	err = cursor.All(context.TODO(),allItems)
+	if err != nil{
+		return nil,err
+	}
+	return allItems,nil
+}
 func (r *Repository)GetItemById(id primitive.ObjectID) (*response.Item,error){
 	itemCollection := r.client.Database("ToDoApp").Collection("Items")
-	var item *response.Item
+	item := &response.Item{}
 	err :=itemCollection.FindOne(context.TODO(),bson.D{{"_id",id}}).Decode(item)
 	if err !=nil {
 		return nil,err
 	}
 	return item,nil
 }
+
 
 func (r *Repository)AddUser(user *payload.User)(primitive.ObjectID,error){
 	userCollection := r.client.Database("ToDoApp").Collection("Users")
@@ -123,6 +152,10 @@ func (r *Repository)AddUser(user *payload.User)(primitive.ObjectID,error){
 		Email: user.Email,
 		Password: user.Password,
 		Status:   false,
+	}
+	_,err := r.GetUserByEmail(user)
+	if err==nil{
+		return [12]byte{},errors.New("email already used")
 	}
 	res,err :=userCollection.InsertOne(context.TODO(),modelUser)
 	if err!=nil{
@@ -139,9 +172,8 @@ func (r *Repository)DeleteUser(user *payload.User)error{
 			return err
 		}
 		for _,v := range deletedUser.Items{
-			_,err = r.removeItem(&payload.Item{
+			_,err = r.removeItem(user.Id,&payload.Item{
 				Id:     v.Id,
-				UserId: v.UserId,
 			},sessCtx)
 			if err != nil{
 				_ = sessCtx.AbortTransaction(sessCtx)
@@ -155,13 +187,25 @@ func (r *Repository)DeleteUser(user *payload.User)error{
 }
 func (r *Repository)UpdateUser(user *payload.User)(*response.User,error){
 	itemCollection := r.client.Database("ToDoApp").Collection("Users")
-	var updatedItem *response.User
-	err :=itemCollection.FindOneAndReplace(context.TODO(),bson.D{{"_id",user.Id}},user).Decode(updatedItem)
+	modelUser := &model.User{
+		Id:        user.Id,
+		LastName:  user.LastName,
+		FirstName: user.FirstName,
+		Email:     user.Email,
+		Password:  user.Password,
+		Status:    false,
+	}
+	updateValue := bson.M{
+		"$set": modelUser,
+	}
+	updatedItem := &response.User{}
+	err :=itemCollection.FindOneAndUpdate(context.TODO(),bson.D{{"_id",user.Id}},updateValue).Decode(updatedItem)
 	if err !=nil{
 		return updatedItem,err
 	}
 	return updatedItem,nil
 }
+
 func (r *Repository)GetAllUsers() (*[]response.User,error){
 	itemCollection := r.client.Database("ToDoApp").Collection("Users")
 	query := []bson.M{{
@@ -187,15 +231,16 @@ func (r *Repository)GetAllUsers() (*[]response.User,error){
 }
 func (r *Repository)GetUserById(id primitive.ObjectID) (*response.User,error){
 	itemCollection := r.client.Database("ToDoApp").Collection("Users")
-	query := []bson.M{{
+	query := []bson.M{
+		{"$match": bson.M{
+			"_id": id,
+		}},
+		{
 		"$lookup":bson.M{
 			"from" : "Items",
 			"localField": "_id",
 			"foreignField": "userId",
 			"as": "items",
-		}},
-		{"$match": bson.M{
-		"_id": id,
 		}}}
 	cursor,err:= itemCollection.Aggregate(context.TODO(),query)
 	if err !=nil{
@@ -205,42 +250,75 @@ func (r *Repository)GetUserById(id primitive.ObjectID) (*response.User,error){
 	err = cursor.All(context.TODO(),users)
 	if err != nil {
 		return &response.User{}, err
+	}
+	if len(*users) == 0{
+		return nil,errors.New("no user with this id was found")
+	}
+	return &(*users)[0],nil
+}
+func (r *Repository)GetUserByCredentials(user *payload.User)(*response.User,error){
+	itemCollection := r.client.Database("ToDoApp").Collection("Users")
+	query := []bson.M{
+		{"$match": bson.M{
+			"email": user.Email,
+			"password": user.Password,
+		}},
+		{
+		"$lookup":bson.M{
+			"from" : "Items",
+			"localField": "_id",
+			"foreignField": "userId",
+			"as": "items",
+		}}}
+	cursor,err:= itemCollection.Aggregate(context.TODO(),query)
+	if err !=nil{
+		return &response.User{}, err
+	}
+	users := new([]response.User)
+	err = cursor.All(context.TODO(),users)
+	if err != nil {
+		return &response.User{}, err
+	}
+	if len(*users) == 0{
+		return nil,errors.New("no user with this id was found")
+	}
+	return &(*users)[0],nil
+}
+func (r*Repository)GetUserByEmail(user *payload.User)(*response.User,error){
+	itemCollection := r.client.Database("ToDoApp").Collection("Users")
+	query := []bson.M{
+		{"$match": bson.M{
+			"email": user.Email,
+		}},
+		{
+			"$lookup":bson.M{
+				"from" : "Items",
+				"localField": "_id",
+				"foreignField": "userId",
+				"as": "items",
+			}}}
+	cursor,err:= itemCollection.Aggregate(context.TODO(),query)
+	if err !=nil{
+		return &response.User{}, err
+	}
+	users := new([]response.User)
+	err = cursor.All(context.TODO(),users)
+	if err != nil {
+		return &response.User{}, err
+	}
+	if len(*users) == 0{
+		return nil,errors.New("no user with this id was found")
 	}
 	return &(*users)[0],nil
 }
 
-func (r *Repository)GetUserByCredentials(user *payload.User)(*response.User,error){
-	itemCollection := r.client.Database("ToDoApp").Collection("Users")
-	query := []bson.M{{
-		"$lookup":bson.M{
-			"from" : "Items",
-			"localField": "_id",
-			"foreignField": "userId",
-			"as": "items",
-		}},
-		{"$match": bson.M{
-			"email": user.Email,
-			"password": user.Password,
-		}}}
-	cursor,err:= itemCollection.Aggregate(context.TODO(),query)
-	if err !=nil{
-		return &response.User{}, err
-	}
-	users := new([]response.User)
-	err = cursor.All(context.TODO(),users)
-	if err != nil {
-		return &response.User{}, err
-	}
-	return &(*users)[0],nil
-}
 
 func (r *Repository)setUserStatus(id primitive.ObjectID, status bool,ctx context.Context)error{
 	userCollection := r.client.Database("ToDoApp").Collection("Users")
 	_,err :=userCollection.UpdateOne(ctx,bson.D{{"_id",id}},bson.M{"$set":bson.M{"status":status}})
 	return err
 }
-
-func (r *Repository)insertItem(item *payload.Item,ctx context.Context)(primitive.ObjectID,error){
+func (r *Repository)insertItem(item *model.Item,ctx context.Context)(primitive.ObjectID,error){
 	itemCollection := r.client.Database("ToDoApp").Collection("Items")
 	res,err :=itemCollection.InsertOne(ctx,item)
 	if err != nil{
@@ -249,21 +327,22 @@ func (r *Repository)insertItem(item *payload.Item,ctx context.Context)(primitive
 	id := res.InsertedID.(primitive.ObjectID)
 	return id,err
 }
-
-func (r *Repository)removeItem(item *payload.Item,ctx context.Context)(*response.Item,error){
+func (r *Repository)removeItem(userId primitive.ObjectID,item *payload.Item,ctx context.Context)(*response.Item,error){
 	itemCollection := r.client.Database("ToDoApp").Collection("Items")
-	var deletedItem *response.Item
-	err :=itemCollection.FindOneAndDelete(ctx,bson.D{{"_id",item.Id},{"userId",item.UserId}}).Decode(deletedItem)
+	deletedItem := &response.Item{}
+	err :=itemCollection.FindOneAndDelete(ctx,bson.D{{"_id",item.Id},{"userId",userId}}).Decode(deletedItem)
 	if err !=nil{
 		return nil, err
 	}
 	return deletedItem,nil
 }
-
 func (r * Repository)removeUser(user *payload.User,ctx context.Context)(*response.User,error){
 	userCollection := r.client.Database("ToDoApp").Collection("Users")
-	var deletedUser *response.User
-	err :=userCollection.FindOneAndDelete(ctx,bson.D{{"_id",user.Id}}).Decode(deletedUser)
+	deletedUser,err := r.GetUserById(user.Id)
+	if err != nil{
+		return nil, err
+	}
+	userCollection.FindOneAndDelete(ctx,bson.D{{"_id",user.Id}})
 	if err != nil{
 		return nil, err
 	}
