@@ -26,3 +26,9 @@ func CheckRegisterCredentials(user * payload.User)error{
 	}
 	return nil
 }
+
+
+
+
+
+
