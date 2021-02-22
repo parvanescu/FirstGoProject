@@ -3,8 +3,10 @@ package delivery
 import (
 	"ExGabi/mutations"
 	"ExGabi/payload"
+	"ExGabi/response"
 	"ExGabi/types"
 	"ExGabi/utils/gql"
+	"ExGabi/utils/token"
 	"github.com/graphql-go/graphql"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -23,6 +25,9 @@ func New(uc mutations.IUseCase) graphql.Fields {
 		"deleteUser": h.deleteUser(),
 		"updateUser": h.updateUser(),
 		"register": h.register(),
+		"login": h.login(),
+		"searchItem":h.searchItem(),
+		"checkToken":h.checkToken(),
 	}
 }
 
@@ -60,9 +65,9 @@ func (h Handler) deleteItem() *graphql.Field {
 		Description: "Delete a note \n Return token",
 		Args: graphql.FieldConfigArgument{
 			"id":&graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(gql.ObjectId)},
+				Type: gql.ObjectId},
 			"token":&graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.String)},
+				Type: graphql.String},
 		},
 		Resolve: func(params graphql.ResolveParams)(interface{},error){
 			id := params.Args["id"].(primitive.ObjectID)
@@ -133,7 +138,6 @@ func (h Handler) updateUser() *graphql.Field {
 		Type: types.UserType,
 		Description: "Update a user\n Returns old values of User",
 		Args: graphql.FieldConfigArgument{
-			"id": &graphql.ArgumentConfig{Type: gql.ObjectId},
 			"last_name":&graphql.ArgumentConfig{Type: graphql.String},
 			"first_name":&graphql.ArgumentConfig{Type: graphql.String},
 			"email":&graphql.ArgumentConfig{Type: graphql.String},
@@ -143,7 +147,6 @@ func (h Handler) updateUser() *graphql.Field {
 		Resolve: func(params graphql.ResolveParams)(interface{},error){
 			responseUsr,err:=h.uC.UpdateUser(
 				&payload.User{
-					Id: params.Args["id"].(primitive.ObjectID),
 					LastName:  params.Args["last_name"].(string),
 					FirstName: params.Args["first_name"].(string),
 					Email:     params.Args["email"].(string),
@@ -161,7 +164,7 @@ func (h Handler) updateUser() *graphql.Field {
 
 func (h Handler) register() *graphql.Field {
 	return &graphql.Field{
-		Type: graphql.String,
+		Type: types.UserType,
 		Description: "Register user",
 		Args: graphql.FieldConfigArgument{
 			"last_name":&graphql.ArgumentConfig{Type: graphql.String},
@@ -170,7 +173,7 @@ func (h Handler) register() *graphql.Field {
 			"password":&graphql.ArgumentConfig{Type: graphql.String},
 		},
 		Resolve: func(params graphql.ResolveParams)(interface{},error){
-			tkn,err:=h.uC.Register(
+			user,err:=h.uC.Register(
 				&payload.User{
 					LastName: params.Args["last_name"].(string),
 					FirstName: params.Args["first_name"].(string),
@@ -180,8 +183,73 @@ func (h Handler) register() *graphql.Field {
 			if err!=nil{
 				return nil, err
 			}
-			return tkn, nil
+			return user, nil
 
+		},
+	}
+}
+
+func (h *Handler) login() *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.String,
+		Description: "Login",
+		Args: graphql.FieldConfigArgument{
+			"email": &graphql.ArgumentConfig{Type: graphql.String},
+			"password": &graphql.ArgumentConfig{Type: graphql.String},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			email := p.Args["email"].(string)
+			password := p.Args["password"].(string)
+			tkn,err:=h.uC.Login(&payload.User{Email: email,Password: password})
+			return tkn,err
+		},
+	}
+}
+
+func (h *Handler) searchItem() *graphql.Field{
+	return &graphql.Field{
+		Type: graphql.NewList(types.ItemType),
+		Description: "Get items with title or description matching the given key",
+		Args: graphql.FieldConfigArgument{
+			"criteria": &graphql.ArgumentConfig{Type: graphql.String},
+			"token": &graphql.ArgumentConfig{Type: graphql.String},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			criteria := p.Args["criteria"].(string)
+			token := p.Args["token"].(string)
+			items,newToken,err:=h.uC.GetMatchingSearch(&payload.Item{Title: criteria,Token: token})
+
+
+			if len(*items)!=0{
+				(*items)[0].Token = newToken
+				return items,err
+			}else{
+				list :=[1]response.Item{}
+				list[0]=response.Item{Token: newToken}
+				return list,err
+			}
+		},
+	}
+}
+
+func (h *Handler)checkToken() *graphql.Field{
+	return &graphql.Field{
+		Type: graphql.String,
+		Description: "Check users token",
+		Args: graphql.FieldConfigArgument{
+			"token": &graphql.ArgumentConfig{Type: graphql.String},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			tokenToCheck := p.Args["token"].(string)
+			tokenClaims,err := token.CheckToken(tokenToCheck)
+			if err!=nil{
+				return nil,err
+			}
+			newToken,err := token.CreateToken(tokenClaims)
+			if err!=nil{
+				return nil,err
+			}
+			return newToken,nil
 		},
 	}
 }

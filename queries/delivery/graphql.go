@@ -19,9 +19,11 @@ func New(uc queries.IUseCase) graphql.Fields {
 	return graphql.Fields{
 		"getItemById":h.getItemById(),
 		"getAllItems":h.getAllItems(),
+		"getAllUsersItems":h.getAllUsersItems(),
 		"getUserById":h.getUserById(),
+		"getUsersProfile":h.getUsersProfile(),
 		"getAllUsers":h.getAllUsers(),
-		"login": h.login(),
+
 
 	}
 }
@@ -72,6 +74,29 @@ func (h *Handler) getAllItems() *graphql.Field {
 	}
 }
 
+func (h *Handler) getAllUsersItems() * graphql.Field{
+	return &graphql.Field{
+		Type: graphql.NewList(types.ItemType),
+		Description: "Get all items",
+		Args: graphql.FieldConfigArgument{
+			"token":&graphql.ArgumentConfig{
+				Type: graphql.String},
+		},
+		Resolve: func(p graphql.ResolveParams)(interface{},error){
+			token := p.Args["token"].(string)
+			itemList,newToken,err :=h.uC.GetAllUsersItems(token)
+			if len(*itemList)!=0{
+				(*itemList)[0].Token = newToken
+				return itemList,err
+			}else{
+				list :=[1]response.Item{}
+				list[0]=response.Item{Token: newToken}
+				return list,err
+			}
+		},
+	}
+}
+
 func (h *Handler) getUserById() *graphql.Field {
 	return &graphql.Field{
 		Type: types.UserType,
@@ -85,6 +110,25 @@ func (h *Handler) getUserById() *graphql.Field {
 			id:=p.Args["id"].(primitive.ObjectID)
 			token:= p.Args["token"].(string)
 			user,err := h.uC.GetUserById(&payload.User{Id:id,Token: token})
+			if err!=nil{
+				return nil,err
+			}
+			return user,err
+		},
+	}
+}
+
+func (h *Handler) getUsersProfile() *graphql.Field{
+	return &graphql.Field{
+		Type: types.UserType,
+		Description: "Get logged user's profile ",
+		Args: graphql.FieldConfigArgument{
+			"token":&graphql.ArgumentConfig{
+				Type: graphql.String},
+		},
+		Resolve: func(p graphql.ResolveParams)(interface{},error){
+			token:= p.Args["token"].(string)
+			user,err := h.uC.GetUserProfile(token)
 			if err!=nil{
 				return nil,err
 			}
@@ -116,21 +160,6 @@ func (h *Handler) getAllUsers() *graphql.Field {
 	}
 }
 
-func (h *Handler) login() *graphql.Field {
-	return &graphql.Field{
-		Type: graphql.String,
-		Description: "Login",
-		Args: graphql.FieldConfigArgument{
-			"email": &graphql.ArgumentConfig{Type: graphql.String},
-			"password": &graphql.ArgumentConfig{Type: graphql.String},
-		},
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			email := p.Args["email"].(string)
-			password := p.Args["password"].(string)
-			tkn,err:=h.uC.Login(&payload.User{Email: email,Password: password})
-			return tkn,err
-		},
-	}
-}
+
 
 

@@ -4,10 +4,7 @@ import (
 	"ExGabi/payload"
 	"ExGabi/queries"
 	"ExGabi/response"
-	token2 "ExGabi/utils/token"
-	"errors"
-	"github.com/dgrijalva/jwt-go"
-	"time"
+	"ExGabi/utils/token"
 )
 
 type UseCase struct{
@@ -16,11 +13,11 @@ type UseCase struct{
 }
 
 func (uC *UseCase) GetItemById(item *payload.Item) (*response.Item, error) {
-	tkn,err := uC.checkToken(item.Token)
+	tkn,err := token.CheckToken(item.Token)
 	if err!=nil{
 		return nil, err
 	}
-	newToken,err := uC.createToken(tkn)
+	newToken,err := token.CreateToken(tkn)
 	if err!=nil{
 		return nil,err
 	}
@@ -32,11 +29,11 @@ func (uC *UseCase) GetItemById(item *payload.Item) (*response.Item, error) {
 	return getItem,nil
 }
 func (uC *UseCase) GetItemByTitle(item *payload.Item) (*response.Item, error) {
-	tkn,err := uC.checkToken(item.Token)
+	tkn,err := token.CheckToken(item.Token)
 	if err!=nil{
 		return nil, err
 	}
-	newToken,err := uC.createToken(tkn)
+	newToken,err := token.CreateToken(tkn)
 	if err!=nil{
 		return nil,err
 	}
@@ -48,11 +45,11 @@ func (uC *UseCase) GetItemByTitle(item *payload.Item) (*response.Item, error) {
 	return getItem,nil
 }
 func (uC *UseCase) GetItemByDescription(item *payload.Item) (*[]response.Item, string, error) {
-	tkn,err := uC.checkToken(item.Token)
+	tkn,err := token.CheckToken(item.Token)
 	if err!=nil{
 		return nil,item.Token,err
 	}
-	newToken,err := uC.createToken(tkn)
+	newToken,err := token.CreateToken(tkn)
 	if err!=nil{
 		return nil,item.Token,err
 	}
@@ -62,12 +59,12 @@ func (uC *UseCase) GetItemByDescription(item *payload.Item) (*[]response.Item, s
 	}
 	return getItem,newToken,nil
 }
-func (uC *UseCase) GetAllItems(token string) (*[]response.Item, string, error) {
-	tkn,err := uC.checkToken(token)
+func (uC *UseCase) GetAllItems(payloadToken string) (*[]response.Item, string, error) {
+	tkn,err := token.CheckToken(payloadToken)
 	if err!=nil {
 		return nil,"",err
 	}
-	newToken,err:=uC.createToken(tkn)
+	newToken,err:=token.CreateToken(tkn)
 	if err != nil{
 		return nil,newToken,err
 	}
@@ -76,14 +73,27 @@ func (uC *UseCase) GetAllItems(token string) (*[]response.Item, string, error) {
 
 	return items,newToken,nil
 }
+func (uC *UseCase) GetAllUsersItems(payloadToken string) (*[]response.Item,string,error){
+	tknClaims,err := token.CheckToken(payloadToken)
+	if err!=nil {
+		return nil,"",err
+	}
+	newToken,err:=token.CreateToken(tknClaims)
+	if err != nil{
+		return nil,newToken,err
+	}
 
+	items,err := uC.queriesRepository.GetAllUsersItems(tknClaims.Id)
+
+	return items,newToken,nil
+}
 
 func (uC *UseCase) GetUserById(user *payload.User) (*response.User, error) {
-	tkn,err := uC.checkToken(user.Token)
+	tkn,err := token.CheckToken(user.Token)
 	if err!=nil{
 		return nil,err
 	}
-	newToken,err := uC.createToken(tkn)
+	newToken,err := token.CreateToken(tkn)
 	if err!=nil{
 		return nil, err
 	}
@@ -94,12 +104,28 @@ func (uC *UseCase) GetUserById(user *payload.User) (*response.User, error) {
 	usr.Token=newToken
 	return usr,nil
 }
-func (uC *UseCase) GetUserByEmail(user *payload.User) (*response.User, error) {
-	tkn,err := uC.checkToken(user.Token)
+func (uC *UseCase)GetUserProfile(payloadToken string)(*response.User,error){
+	tknClaims,err := token.CheckToken(payloadToken)
 	if err!=nil{
 		return nil,err
 	}
-	newToken,err := uC.createToken(tkn)
+	newToken,err := token.CreateToken(tknClaims)
+	if err!=nil{
+		return nil, err
+	}
+	usr,err:=uC.queriesRepository.GetUserById(tknClaims.Id)
+	if err!=nil{
+		return nil,err
+	}
+	usr.Token=newToken
+	return usr,nil
+}
+func (uC *UseCase) GetUserByEmail(user *payload.User) (*response.User, error) {
+	tkn,err := token.CheckToken(user.Token)
+	if err!=nil{
+		return nil,err
+	}
+	newToken,err := token.CreateToken(tkn)
 	if err!=nil{
 		return nil, err
 	}
@@ -110,13 +136,13 @@ func (uC *UseCase) GetUserByEmail(user *payload.User) (*response.User, error) {
 	usr.Token=newToken
 	return usr,nil
 }
-func (uC *UseCase) GetAllUsers(token string) (*[]response.User, string, error) {
-	tkn,err := uC.checkToken(token)
+func (uC *UseCase) GetAllUsers(payloadToken string) (*[]response.User, string, error) {
+	tkn,err := token.CheckToken(payloadToken)
 	if err!=nil {
 		return nil,"",err
 	}
 
-	newToken,err:=uC.createToken(tkn)
+	newToken,err:=token.CreateToken(tkn)
 	if err!=nil{
 		return nil, newToken, err
 	}
@@ -130,47 +156,7 @@ func (uC *UseCase) GetAllUsers(token string) (*[]response.User, string, error) {
 }
 
 
-func (uC UseCase) Login(user *payload.User) (string, error) {
-	responseUser,err := uC.queriesRepository.GetUserByCredentials(user)
-	if err!=nil{
-		return "", err
-	}
-	tkn,err:=uC.createToken(&response.User{Id: responseUser.Id,Email: responseUser.Email})
-	if err!=nil{
-		return "", nil
-	}
-	return tkn,nil
-}
-
 func New(repo queries.IRepository)queries.IUseCase{
 	return &UseCase{repo}
 }
 
-func(uC *UseCase)checkToken(tkn string) (*response.User,error) {
-	claims := &response.User{}
-	token, err := jwt.ParseWithClaims(tkn, claims, func(token *jwt.Token) (interface{}, error) {
-		return token2.JwtKey, nil
-	})
-
-	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			return nil,errors.New("invalid signature")
-		}
-		return nil,err
-	}
-	if !token.Valid {
-		return nil,errors.New("invalid token")
-	}
-	return claims,nil
-}
-func(uC *UseCase)createToken(user *response.User)(string,error){
-
-	expirationTime := time.Now().Add(5 * time.Hour)
-	user.ExpiresAt = expirationTime.Unix()
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256,user)
-	tokenString,err := token.SignedString(token2.JwtKey)
-	if err!=nil{
-		return "", nil
-	}
-	return tokenString,nil
-}

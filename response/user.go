@@ -10,6 +10,7 @@ type User struct{
 	LastName string							`bson:"lastName,omitempty" json:"last_name"`
 	FirstName string							`bson:"firstName,omitempty" json:"first_name"`
 	Email string 							`bson:"email" json:"email"`
+	Password string							`bson:"password,omitempty" json:"password"`
 	Status bool                             `bson:"status" json:"status"`
 	Items []Item							`bson:"items" json:"items"`
 	Token string							`json:"token"`

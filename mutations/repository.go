@@ -17,4 +17,6 @@ type IRepository interface{
 
 	GetUserById(id primitive.ObjectID) (*response.User,error)
 	GetUserByEmail(user *payload.User)(*response.User,error)
+	GetUserByCredentials(user *payload.User)(*response.User,error)
+	GetMatchingItems(userId primitive.ObjectID,item *payload.Item)(*[]response.Item,error)
 }

@@ -30,12 +30,18 @@
   <component name="ChangeListManager">
     <list default="true" id="32d5ac43-9cf4-4f7c-8c7d-fc305af74971" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/repository/interface.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/repository/repository.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/useCase/interface.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/useCase/useCase.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/utilities.go" beforeDir="false" afterPath="$PROJECT_DIR$/utils/utilities.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/delivery/graphql.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mutations/delivery/graphql.go" beforeDir="false" afterPath="$PROJECT_DIR$/mutations/delivery/graphql.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mutations/repository.go" beforeDir="false" afterPath="$PROJECT_DIR$/mutations/repository.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mutations/repository/graphql.go" beforeDir="false" afterPath="$PROJECT_DIR$/mutations/repository/graphql.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mutations/useCase.go" beforeDir="false" afterPath="$PROJECT_DIR$/mutations/useCase.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mutations/useCase/graphql.go" beforeDir="false" afterPath="$PROJECT_DIR$/mutations/useCase/graphql.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queries/delivery/graphql.go" beforeDir="false" afterPath="$PROJECT_DIR$/queries/delivery/graphql.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queries/repository.go" beforeDir="false" afterPath="$PROJECT_DIR$/queries/repository.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queries/repository/graphql.go" beforeDir="false" afterPath="$PROJECT_DIR$/queries/repository/graphql.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queries/useCase.go" beforeDir="false" afterPath="$PROJECT_DIR$/queries/useCase.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queries/useCase/graphql.go" beforeDir="false" afterPath="$PROJECT_DIR$/queries/useCase/graphql.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/response/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/response/user.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -123,42 +129,42 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="740" y="275" key="FileChooserDialogImpl/0.0.1920.1040@0.0.1920.1040" timestamp="1612823618501" />
-    <state width="914" height="223" key="GridCell.Tab.0.bottom" timestamp="1612973032103">
+    <state width="1877" height="223" key="GridCell.Tab.0.bottom" timestamp="1613764795409">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="914" height="223" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1612973032103" />
-    <state width="914" height="223" key="GridCell.Tab.0.center" timestamp="1612973032103">
+    <state width="1877" height="223" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1613764795409" />
+    <state width="1877" height="223" key="GridCell.Tab.0.center" timestamp="1613764795409">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="914" height="223" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1612973032103" />
-    <state width="914" height="223" key="GridCell.Tab.0.left" timestamp="1612973032103">
+    <state width="1877" height="223" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1613764795409" />
+    <state width="1877" height="223" key="GridCell.Tab.0.left" timestamp="1613764795409">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="914" height="223" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1612973032103" />
-    <state width="914" height="223" key="GridCell.Tab.0.right" timestamp="1612973032103">
+    <state width="1877" height="223" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1613764795409" />
+    <state width="1877" height="223" key="GridCell.Tab.0.right" timestamp="1613764795409">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="914" height="223" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1612973032103" />
-    <state width="1877" height="233" key="GridCell.Tab.1.bottom" timestamp="1612774034895">
+    <state width="1877" height="223" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1613764795409" />
+    <state width="1877" height="223" key="GridCell.Tab.1.bottom" timestamp="1613764795409">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="233" key="GridCell.Tab.1.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1612774034895" />
-    <state width="1877" height="233" key="GridCell.Tab.1.center" timestamp="1612774034895">
+    <state width="1877" height="223" key="GridCell.Tab.1.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1613764795409" />
+    <state width="1877" height="223" key="GridCell.Tab.1.center" timestamp="1613764795409">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="233" key="GridCell.Tab.1.center/0.0.1920.1040@0.0.1920.1040" timestamp="1612774034895" />
-    <state width="1877" height="233" key="GridCell.Tab.1.left" timestamp="1612774034895">
+    <state width="1877" height="223" key="GridCell.Tab.1.center/0.0.1920.1040@0.0.1920.1040" timestamp="1613764795409" />
+    <state width="1877" height="223" key="GridCell.Tab.1.left" timestamp="1613764795409">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="233" key="GridCell.Tab.1.left/0.0.1920.1040@0.0.1920.1040" timestamp="1612774034895" />
-    <state width="1877" height="233" key="GridCell.Tab.1.right" timestamp="1612774034895">
+    <state width="1877" height="223" key="GridCell.Tab.1.left/0.0.1920.1040@0.0.1920.1040" timestamp="1613764795409" />
+    <state width="1877" height="223" key="GridCell.Tab.1.right" timestamp="1613764795409">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="233" key="GridCell.Tab.1.right/0.0.1920.1040@0.0.1920.1040" timestamp="1612774034895" />
-    <state width="968" height="528" key="XDebugger.FullValuePopup" timestamp="1612616228863">
+    <state width="1877" height="223" key="GridCell.Tab.1.right/0.0.1920.1040@0.0.1920.1040" timestamp="1613764795409" />
+    <state width="968" height="528" key="XDebugger.FullValuePopup" timestamp="1613560999926">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="968" height="528" key="XDebugger.FullValuePopup/0.0.1920.1040@0.0.1920.1040" timestamp="1612616228863" />
+    <state width="968" height="528" key="XDebugger.FullValuePopup/0.0.1920.1040@0.0.1920.1040" timestamp="1613560999926" />
     <state x="777" y="434" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1605692208024">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -180,6 +186,7 @@
         <watch expression="*(*&quot;go.mongodb.org/mongo-driver/mongo.Client&quot;)(824636574336)" />
         <watch expression="user.Id.String()" language="go" />
         <watch expression="*(*&quot;go.mongodb.org/mongo-driver/mongo.Client&quot;)(824636574336)" />
+        <watch expression="userId.String()" language="go" />
       </configuration>
     </watches-manager>
   </component>

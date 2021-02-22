@@ -17,6 +17,14 @@ type Repository struct{
 	client mongo.Client
 }
 
+
+
+func New(client *mongo.Client) mutations.IRepository{
+	fmt.Println("Repo initialized")
+	repo := Repository{client: *client}
+	return &repo
+}
+
 func (r *Repository) AddItem(userId primitive.ObjectID, item *payload.Item) (primitive.ObjectID, error) {
 	newItemId := primitive.ObjectID{}
 	err := r.client.UseSession(context.TODO(), func(sessCtx mongo.SessionContext)error{
@@ -133,7 +141,6 @@ func (r *Repository) UpdateUser(user *payload.User) (*response.User, error) {
 		FirstName: user.FirstName,
 		Email:     user.Email,
 		Password:  user.Password,
-		Status:    false,
 	}
 	updateValue := bson.M{
 		"$set": modelUser,
@@ -147,11 +154,7 @@ func (r *Repository) UpdateUser(user *payload.User) (*response.User, error) {
 }
 
 
-func New(client *mongo.Client) mutations.IRepository{
-	fmt.Println("Repo initialized")
-	repo := Repository{client: *client}
-	return &repo
-}
+
 
 func (r *Repository)setUserStatus(id primitive.ObjectID, status bool,ctx context.Context)error{
 	userCollection := r.client.Database("ToDoApp").Collection("Users")
@@ -242,4 +245,60 @@ func (r *Repository) GetUserByEmail(user *payload.User) (*response.User, error) 
 		return nil,errors.New("no user with this id was found")
 	}
 	return &(*users)[0],nil
+}
+func (r *Repository) GetUserByCredentials(user *payload.User) (*response.User, error) {
+	itemCollection := r.client.Database("ToDoApp").Collection("Users")
+	query := []bson.M{
+		{"$match": bson.M{
+			"email": user.Email,
+			"password": user.Password,
+		}},
+		{
+			"$lookup":bson.M{
+				"from" : "Items",
+				"localField": "_id",
+				"foreignField": "userId",
+				"as": "items",
+			}}}
+	cursor,err:= itemCollection.Aggregate(context.TODO(),query)
+	if err !=nil{
+		return &response.User{}, err
+	}
+	users := new([]response.User)
+	err = cursor.All(context.TODO(),users)
+	if err != nil {
+		return &response.User{}, err
+	}
+	if len(*users) == 0{
+		return nil,errors.New("no user with this credentials was found")
+	}
+	return &(*users)[0],nil
+}
+
+func (r *Repository) GetMatchingItems(userId primitive.ObjectID,item *payload.Item) (*[]response.Item, error) {
+	itemCollection := r.client.Database("ToDoApp").Collection("Items")
+
+	searchRegexValue := primitive.Regex{Pattern: item.Description, Options: "i"}
+	search := bson.M{}
+	if item.Description != "" {
+		search["$or"] = []bson.M{{"description": searchRegexValue}, {"title": searchRegexValue}}
+	}
+
+	cursor,err :=itemCollection.Aggregate(context.TODO(),
+		[]bson.M{
+			{"$match": bson.M{"userId":userId}},
+			{"$match": search},
+		})
+
+	if err != nil{
+		return nil,err
+	}
+	defer cursor.Close(context.TODO())
+
+	allItems := new([]response.Item)
+	err = cursor.All(context.TODO(),allItems)
+	if err != nil{
+		return nil,err
+	}
+	return allItems,nil
 }

@@ -32,6 +32,21 @@ func (r *Repository) GetAllItems() (*[]response.Item, error) {
 	}
 	return allItems,nil
 }
+func (r*Repository) GetAllUsersItems(userId primitive.ObjectID) (*[]response.Item,error){
+	itemCollection := r.client.Database("ToDoApp").Collection("Items")
+	cursor,err :=itemCollection.Find(context.TODO(),bson.D{{"userId",userId}})
+	if err != nil{
+		return nil,err
+	}
+	defer cursor.Close(context.TODO())
+
+	allItems := new([]response.Item)
+	err = cursor.All(context.TODO(),allItems)
+	if err != nil{
+		return nil,err
+	}
+	return allItems,nil
+}
 func (r *Repository) GetItemByTitle(item *payload.Item) (*response.Item, error) {
 	itemCollection := r.client.Database("ToDoApp").Collection("Items")
 	foundItem := &response.Item{}

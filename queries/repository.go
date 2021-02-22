@@ -8,6 +8,7 @@ import (
 
 type IRepository interface{
 	GetAllItems() (*[]response.Item,error)
+	GetAllUsersItems(userId primitive.ObjectID) (*[]response.Item,error)
 	GetItemByTitle(item *payload.Item)(*response.Item,error)
 	GetItemByDescription(item *payload.Item)(*[]response.Item,error)
 	GetItemById(id primitive.ObjectID) (*response.Item,error)
