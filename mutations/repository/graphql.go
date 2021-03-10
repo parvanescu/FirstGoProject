@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"ExGabi/customErrors"
 	"ExGabi/model"
 	"ExGabi/mutations"
 	"ExGabi/payload"
@@ -90,15 +91,57 @@ func (r *Repository) UpdateItem(userId primitive.ObjectID, item *payload.Item) (
 	return updatedItem,err
 }
 
+func (r *Repository) AddUserAndOrganisation(user *payload.User,organisation *payload.Organisation)(primitive.ObjectID,primitive.ObjectID,error){
+	newUserId := primitive.ObjectID{}
+	newOrganisationId := primitive.ObjectID{}
+	err := r.client.UseSession(context.TODO(),func(sessCtx mongo.SessionContext)error{
+		userId,err:=r.AddUser(organisation.Id,user)
+		if err!=nil{
+			_ = sessCtx.AbortTransaction(sessCtx)
+			return err
+		}
+		organisationId,err:=r.AddOrganisation(organisation)
+		if err!=nil{
+			_ = sessCtx.AbortTransaction(sessCtx)
+		}
 
+		newUserId = userId
+		newOrganisationId = organisationId
+		_ = sessCtx.CommitTransaction(sessCtx)
+		return nil
+	})
+	return newUserId,newOrganisationId,err
+}
+func (r *Repository) UpdateUserPassword(user *payload.User,organisation *payload.Organisation) error {
+	err := r.client.UseSession(context.TODO(),func(sessCtx mongo.SessionContext)error{
+		err := r.setUserPassword(user.Id,user.Password,sessCtx)
+		if err!=nil{
+			_ = sessCtx.AbortTransaction(sessCtx)
+			return err
+		}
+		err= r.setUserStatus(user.Id,true,sessCtx)
+		if err!=nil{
+			_ = sessCtx.AbortTransaction(sessCtx)
+			return err
+		}
+		err = r.setOrganisationStatus(organisation.Id, true, sessCtx)
+		if err!=nil{
+			_ = sessCtx.AbortTransaction(sessCtx)
+			return err
+		}
+		_ = sessCtx.CommitTransaction(sessCtx)
+		return nil
+	})
+	return err
+}
 
-func (r *Repository) AddUser(user *payload.User) (primitive.ObjectID, error) {
+func (r *Repository) AddUser(organisationId primitive.ObjectID,user *payload.User) (primitive.ObjectID, error) {
 	userCollection := r.client.Database("ToDoApp").Collection("Users")
 	modelUser := model.User{
 		FirstName: user.FirstName,
 		LastName: user.LastName,
 		Email: user.Email,
-		Password: user.Password,
+		OrganisationId: organisationId,
 		Status:   false,
 	}
 	_,err := r.GetUserByEmail(user)
@@ -153,12 +196,59 @@ func (r *Repository) UpdateUser(user *payload.User) (*response.User, error) {
 	return updatedItem,nil
 }
 
+func (r *Repository) AddOrganisation(organisation *payload.Organisation)(primitive.ObjectID,error){
+	organisationCollection := r.client.Database("ToDoApp").Collection("Organisations")
+	modelOrganisation := model.Organisation{
+		Name:   organisation.Name,
+		CUI:    organisation.CUI,
+		Status: false,
+	}
+	_,err:=r.GetOrganisationByCUI(organisation)
+	if err == nil{
+		return [12]byte{}, errors.New("an organisation with this CUI already exists")
+	}
+	res,err :=organisationCollection.InsertOne(context.TODO(),modelOrganisation)
+	if err!=nil{
+		return [12]byte{}, err
+	}
+	id := res.InsertedID.(primitive.ObjectID)
+	return id,nil
+}
+func (r *Repository) DeleteOrganisationById(organisation *payload.Organisation) error {
+	panic("implement me")
+}
+func (r *Repository) UpdateOrganisation(organisation *payload.Organisation) (*response.Organisation, error) {
+	organisationCollection := r.client.Database("ToDoApp").Collection("Organisations")
+	modelOrganisation := &model.Organisation{
+		Id:     organisation.Id,
+		Name:  	organisation.Name,
+		CUI:    organisation.CUI,
+		Status: false,
+	}
+	updateValue := bson.M{
+		"$set":modelOrganisation,
+	}
+	updatedOrganisation := &response.Organisation{}
+	err := organisationCollection.FindOneAndUpdate(context.TODO(),bson.D{{"_id",organisation.Id}},updateValue).Decode(updatedOrganisation)
+	if err!=nil{
+		return nil, err
+	}
+	return updatedOrganisation,nil
+}
 
-
-
+func (r *Repository)setUserPassword(id primitive.ObjectID,password string,ctx context.Context)error{
+	userCollection := r.client.Database("ToDoApp").Collection("Users")
+	_,err :=userCollection.UpdateOne(ctx,bson.D{{"_id",id}},bson.M{"$set":bson.M{"password":password}})
+	return err
+}
 func (r *Repository)setUserStatus(id primitive.ObjectID, status bool,ctx context.Context)error{
 	userCollection := r.client.Database("ToDoApp").Collection("Users")
 	_,err :=userCollection.UpdateOne(ctx,bson.D{{"_id",id}},bson.M{"$set":bson.M{"status":status}})
+	return err
+}
+func (r *Repository)setOrganisationStatus(id primitive.ObjectID,status bool,ctx context.Context)error{
+	organisationCollection := r.client.Database("ToDoApp").Collection("Organisations")
+	_,err :=organisationCollection.UpdateOne(ctx,bson.D{{"_id",id}},bson.M{"$set":bson.M{"status":status}})
 	return err
 }
 func (r *Repository)insertItem(item *model.Item,ctx context.Context)(primitive.ObjectID,error){
@@ -242,7 +332,7 @@ func (r *Repository) GetUserByEmail(user *payload.User) (*response.User, error) 
 		return &response.User{}, err
 	}
 	if len(*users) == 0{
-		return nil,errors.New("no user with this id was found")
+		return nil,customErrors.NewUserNotFoundError()
 	}
 	return &(*users)[0],nil
 }
@@ -274,7 +364,6 @@ func (r *Repository) GetUserByCredentials(user *payload.User) (*response.User, e
 	}
 	return &(*users)[0],nil
 }
-
 func (r *Repository) GetMatchingItems(userId primitive.ObjectID,item *payload.Item) (*[]response.Item, error) {
 	itemCollection := r.client.Database("ToDoApp").Collection("Items")
 
@@ -301,4 +390,31 @@ func (r *Repository) GetMatchingItems(userId primitive.ObjectID,item *payload.It
 		return nil,err
 	}
 	return allItems,nil
+}
+func (r *Repository) GetOrganisationByCUI(organisation *payload.Organisation)(*response.Organisation,error){
+	organisationsCollection := r.client.Database("ToDoApp").Collection("Organisations")
+	query := []bson.M{
+		{"$match": bson.M{
+			"cui": organisation.CUI,
+		}},
+		{
+			"$lookup":bson.M{
+				"from" : "Users",
+				"localField": "_id",
+				"foreignField": "organisationId",
+				"as": "users",
+			}}}
+	cursor,err:= organisationsCollection.Aggregate(context.TODO(),query)
+	if err !=nil{
+		return &response.Organisation{}, err
+	}
+	organisations := new([]response.Organisation)
+	err = cursor.All(context.TODO(), organisations)
+	if err != nil {
+		return &response.Organisation{}, err
+	}
+	if len(*organisations) == 0{
+		return nil,customErrors.NewOrganisationNotFoundError()
+	}
+	return &(*organisations)[0],nil
 }

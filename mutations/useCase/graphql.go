@@ -1,17 +1,20 @@
 package useCase
 
 import (
+	"ExGabi/customErrors"
 	"ExGabi/mutations"
 	"ExGabi/payload"
 	"ExGabi/response"
 	"ExGabi/utils"
 	"ExGabi/utils/token"
+	"errors"
 )
 
 type UseCase struct{
 	mutationRepository mutations.IRepository
 
 }
+
 
 func New(repo mutations.IRepository) mutations.IUseCase{
 	return &UseCase{repo}
@@ -92,38 +95,71 @@ func (uC *UseCase) UpdateUser(user *payload.User) (*response.User, error) {
 }
 
 
-func (uC *UseCase) Register(user *payload.User) (*response.User, error) {
+func (uC *UseCase) Register(user *payload.User,organisation *payload.Organisation) (*response.User,*response.Organisation, error) {
 	err:= utils.CheckRegisterCredentials(user)
 	if err!=nil{
-		return nil, err
+		return nil, nil, err
 	}
 
-	id,err :=uC.mutationRepository.AddUser(user)
-	if err != nil{
-		return nil, err
+	dbUser,err := uC.mutationRepository.GetUserByEmail(user)
+	switch err.(type) {
+	case *customErrors.UserNotFoundError:
+		dbOrganisation,err := uC.mutationRepository.GetOrganisationByCUI(organisation)
+		switch err.(type) {
+		case *customErrors.OrganisationNotFoundError:
+			userId,organisationId,err := uC.mutationRepository.AddUserAndOrganisation(user,organisation)
+			if err!=nil{
+				return nil,nil,err
+			}
+			return &response.User{Id:userId},&response.Organisation{Id:organisationId},nil
+		case nil:
+			if dbOrganisation.Status == true{
+				return nil,nil,errors.New("please talk to the organisation owner to add your credentials from the application and then login")
+			}else{
+				return nil,nil,errors.New("the organisation already exist and it is bounded to another email please talk to the site owners")
+			}
+		default:
+			return nil,nil,err
+		}
+	case nil:
+		dbOrganisation,err := uC.mutationRepository.GetOrganisationByCUI(organisation)
+		switch err.(type) {
+		case *customErrors.OrganisationNotFoundError:
+			return nil,nil,errors.New("this account already exists")
+		case nil:
+			if dbUser.Status == false && dbOrganisation.Status == false{
+				return nil,nil,nil
+			}else{
+				return nil,nil,errors.New("the account or the organisation are already active and used please check the credentials")
+			}
+		default:
+			return nil,nil,err
+		}
+	default:
+		return nil,nil,err
 	}
-	responseUser,err := uC.mutationRepository.GetUserById(id)
-	if err!=nil{
-		return nil, err
-	}
-
-	tkn,err:=token.CreateToken(&response.User{Id: responseUser.Id,Email: responseUser.Email})
-	if err!=nil{
-		return nil, err
-	}
-	return &response.User{Id: id,Token: tkn},nil
 }
 func (uC UseCase) Login(user *payload.User) (string, error) {
 	responseUser,err := uC.mutationRepository.GetUserByCredentials(user)
 	if err!=nil{
 		return "", err
 	}
-	tkn,err:=token.CreateToken(&response.User{Id: responseUser.Id,Email: responseUser.Email})
+	tkn,err:=token.CreateToken(&response.User{Id: responseUser.Id,Email: responseUser.Email,OrganisationId: responseUser.OrganisationId})
 	if err!=nil{
 		return "", nil
 	}
 	return tkn,nil
 }
+
+
+func (uC *UseCase) SetUserPassword(user *payload.User) error {
+	err := uC.mutationRepository.UpdateUserPassword(user,&payload.Organisation{Id:user.OrganisationId})
+	if err !=nil{
+		return err
+	}
+	return nil
+}
+
 
 func (uC *UseCase) GetMatchingSearch(item *payload.Item) (*[]response.Item,string, error) {
 	tokenClaims,err := token.CheckToken(item.Token)

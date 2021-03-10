@@ -13,8 +13,10 @@ type IUseCase interface {
 	DeleteUser(user *payload.User)(string,error)
 	UpdateUser(user *payload.User)(*response.User,error)
 
-	Register(user *payload.User)(*response.User,error)
+	Register(user *payload.User,organisation *payload.Organisation)(*response.User,*response.Organisation,error)
 	Login(user *payload.User)(string,error)
+
+	SetUserPassword(user *payload.User)error
 
 	GetMatchingSearch(item *payload.Item)(*[]response.Item,string,error)
 }

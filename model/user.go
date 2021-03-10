@@ -8,6 +8,8 @@ type User struct{
 	FirstName string							`bson:"firstName,omitempty" json:"first_name"`
 	Email string 							`bson:"email" json:"email"`
 	Password string							`bson:"password,omitempty" json:"password"`
+	OrganisationId primitive.ObjectID       `bson:"organisationId" json:"organisation_id"`
+	Position string                         `bson:"position" json:"position"`
 	Status bool                             `bson:"status" json:"status"`
 }
 

@@ -16,6 +16,7 @@ var UserType = graphql.NewObject(
 			"password": &graphql.Field{Type: graphql.String},
 			"status": &graphql.Field{Type: graphql.Boolean},
 			"items": &graphql.Field{Type: graphql.NewList(ItemType)},
+			"organisation_id": &graphql.Field{Type:gql.ObjectId},
 			"token": &graphql.Field{Type: graphql.String},
 		},
 	})

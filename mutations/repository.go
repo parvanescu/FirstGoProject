@@ -11,12 +11,21 @@ type IRepository interface{
 	DeleteItem(userId primitive.ObjectID,item *payload.Item)error
 	UpdateItem(userId primitive.ObjectID,item *payload.Item)(*response.Item,error)
 
-	AddUser(user *payload.User)(primitive.ObjectID,error)
+	AddUser(organisationId primitive.ObjectID,user *payload.User)(primitive.ObjectID,error)
 	DeleteUser(user *payload.User)error
 	UpdateUser(user *payload.User)(*response.User,error)
+
+	AddOrganisation(organisation *payload.Organisation)(primitive.ObjectID,error)
+	DeleteOrganisationById(organisation *payload.Organisation)error
+	UpdateOrganisation(organisation *payload.Organisation)(*response.Organisation,error)
 
 	GetUserById(id primitive.ObjectID) (*response.User,error)
 	GetUserByEmail(user *payload.User)(*response.User,error)
 	GetUserByCredentials(user *payload.User)(*response.User,error)
 	GetMatchingItems(userId primitive.ObjectID,item *payload.Item)(*[]response.Item,error)
+	GetOrganisationByCUI(organisation *payload.Organisation)(*response.Organisation,error)
+
+
+	AddUserAndOrganisation(user *payload.User,organisation *payload.Organisation)(primitive.ObjectID,primitive.ObjectID,error)
+	UpdateUserPassword(user *payload.User,organisation *payload.Organisation) error
 }

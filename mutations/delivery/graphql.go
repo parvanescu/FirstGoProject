@@ -28,6 +28,7 @@ func New(uc mutations.IUseCase) graphql.Fields {
 		"login": h.login(),
 		"searchItem":h.searchItem(),
 		"checkToken":h.checkToken(),
+		"setPassword":h.setPassword(),
 	}
 }
 
@@ -171,20 +172,26 @@ func (h Handler) register() *graphql.Field {
 			"first_name":&graphql.ArgumentConfig{Type: graphql.String},
 			"email":&graphql.ArgumentConfig{Type: graphql.String},
 			"password":&graphql.ArgumentConfig{Type: graphql.String},
+			"organisation_name":&graphql.ArgumentConfig{Type: graphql.String},
+			"CUI":&graphql.ArgumentConfig{Type: graphql.String},
 		},
 		Resolve: func(params graphql.ResolveParams)(interface{},error){
-			user,err:=h.uC.Register(
+			user,organisation,err:=h.uC.Register(
 				&payload.User{
 					LastName: params.Args["last_name"].(string),
 					FirstName: params.Args["first_name"].(string),
 					Email:    params.Args["email"].(string),
 					Password:  params.Args["password"].(string),
+				},
+				&payload.Organisation{
+					Name: params.Args["organisation_name"].(string),
+					CUI: params.Args["CUI"].(string),
 				})
+			user.OrganisationId = organisation.Id
 			if err!=nil{
 				return nil, err
 			}
 			return user, nil
-
 		},
 	}
 }
@@ -250,6 +257,25 @@ func (h *Handler)checkToken() *graphql.Field{
 				return nil,err
 			}
 			return newToken,nil
+		},
+	}
+}
+
+func (h *Handler) setPassword() *graphql.Field {
+	return &graphql.Field{
+		Type: types.UserType,
+		Description: "Sets user password and updates it's status to active",
+		Args: graphql.FieldConfigArgument{
+			"password": &graphql.ArgumentConfig{Type: graphql.String},
+			"user_id": &graphql.ArgumentConfig{Type: gql.ObjectId},
+			"organisation_id": &graphql.ArgumentConfig{Type: gql.ObjectId},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			password := p.Args["password"].(string)
+			userId := p.Args["token"].(primitive.ObjectID)
+			organisationId := p.Args["organisation_id"].(primitive.ObjectID)
+			err := h.uC.SetUserPassword(&payload.User{Id:userId,Password: password,OrganisationId: organisationId})
+			return &response.User{},err
 		},
 	}
 }

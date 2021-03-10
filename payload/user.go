@@ -10,6 +10,7 @@ type User struct{
 	FirstName string							`bson:"firstName,omitempty" json:"first_name"`
 	Email string 							`bson:"email" json:"email"`
 	Password string							`bson:"password,omitempty" json:"password"`
+	OrganisationId primitive.ObjectID       `bson:"organisationId" json:"organisation_id"`
 	Status bool                             `bson:"status" json:"status"`
 	Token string                    `bson:"token" json:"token"`
 }

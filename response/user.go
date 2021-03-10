@@ -12,6 +12,7 @@ type User struct{
 	Email string 							`bson:"email" json:"email"`
 	Password string							`bson:"password,omitempty" json:"password"`
 	Status bool                             `bson:"status" json:"status"`
+	OrganisationId primitive.ObjectID       `bson:"organisationId" json:"organisation_id"`
 	Items []Item							`bson:"items" json:"items"`
 	Token string							`json:"token"`
 	jwt.StandardClaims
