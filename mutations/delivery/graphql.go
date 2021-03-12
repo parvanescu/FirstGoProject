@@ -171,7 +171,6 @@ func (h Handler) register() *graphql.Field {
 			"last_name":&graphql.ArgumentConfig{Type: graphql.String},
 			"first_name":&graphql.ArgumentConfig{Type: graphql.String},
 			"email":&graphql.ArgumentConfig{Type: graphql.String},
-			"password":&graphql.ArgumentConfig{Type: graphql.String},
 			"organisation_name":&graphql.ArgumentConfig{Type: graphql.String},
 			"CUI":&graphql.ArgumentConfig{Type: graphql.String},
 		},
@@ -181,7 +180,7 @@ func (h Handler) register() *graphql.Field {
 					LastName: params.Args["last_name"].(string),
 					FirstName: params.Args["first_name"].(string),
 					Email:    params.Args["email"].(string),
-					Password:  params.Args["password"].(string),
+					Password: "",
 				},
 				&payload.Organisation{
 					Name: params.Args["organisation_name"].(string),

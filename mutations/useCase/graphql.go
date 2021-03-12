@@ -128,7 +128,7 @@ func (uC *UseCase) Register(user *payload.User,organisation *payload.Organisatio
 			return nil,nil,errors.New("this account already exists")
 		case nil:
 			if dbUser.Status == false && dbOrganisation.Status == false{
-				return nil,nil,nil
+				return &response.User{Id:dbUser.Id},&response.Organisation{Id:dbOrganisation.Id},nil
 			}else{
 				return nil,nil,errors.New("the account or the organisation are already active and used please check the credentials")
 			}
@@ -153,7 +153,11 @@ func (uC UseCase) Login(user *payload.User) (string, error) {
 
 
 func (uC *UseCase) SetUserPassword(user *payload.User) error {
-	err := uC.mutationRepository.UpdateUserPassword(user,&payload.Organisation{Id:user.OrganisationId})
+	err := utils.CheckPassword(user.Password)
+	if err!=nil{
+		return err
+	}
+	err = uC.mutationRepository.UpdateUserPassword(user,&payload.Organisation{Id:user.OrganisationId})
 	if err !=nil{
 		return err
 	}

@@ -95,14 +95,15 @@ func (r *Repository) AddUserAndOrganisation(user *payload.User,organisation *pay
 	newUserId := primitive.ObjectID{}
 	newOrganisationId := primitive.ObjectID{}
 	err := r.client.UseSession(context.TODO(),func(sessCtx mongo.SessionContext)error{
-		userId,err:=r.AddUser(organisation.Id,user)
-		if err!=nil{
-			_ = sessCtx.AbortTransaction(sessCtx)
-			return err
-		}
 		organisationId,err:=r.AddOrganisation(organisation)
 		if err!=nil{
 			_ = sessCtx.AbortTransaction(sessCtx)
+		}
+
+		userId,err:=r.AddUser(organisationId,user)
+		if err!=nil{
+			_ = sessCtx.AbortTransaction(sessCtx)
+			return err
 		}
 
 		newUserId = userId
@@ -141,6 +142,7 @@ func (r *Repository) AddUser(organisationId primitive.ObjectID,user *payload.Use
 		FirstName: user.FirstName,
 		LastName: user.LastName,
 		Email: user.Email,
+		Password: "",
 		OrganisationId: organisationId,
 		Status:   false,
 	}

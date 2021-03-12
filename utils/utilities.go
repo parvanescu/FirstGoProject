@@ -21,7 +21,11 @@ func CheckRegisterCredentials(user * payload.User)error{
 	if !emailRegex.MatchString(user.Email){
 		return errors.New("invalid email address")
 	}
-	if len(user.Password) < 6{
+	return nil
+}
+
+func CheckPassword(password string)error{
+	if len(password) < 6{
 		return errors.New("password's length is to small")
 	}
 	return nil
