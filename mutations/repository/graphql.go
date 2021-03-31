@@ -334,7 +334,7 @@ func (r *Repository) GetUserByEmail(user *payload.User) (*response.User, error) 
 		return &response.User{}, err
 	}
 	if len(*users) == 0{
-		return nil,customErrors.NewUserNotFoundError()
+		return nil,errors.New("not found")
 	}
 	return &(*users)[0],nil
 }

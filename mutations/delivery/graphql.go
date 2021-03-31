@@ -271,7 +271,7 @@ func (h *Handler) setPassword() *graphql.Field {
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			password := p.Args["password"].(string)
-			userId := p.Args["token"].(primitive.ObjectID)
+			userId := p.Args["user_id"].(primitive.ObjectID)
 			organisationId := p.Args["organisation_id"].(primitive.ObjectID)
 			err := h.uC.SetUserPassword(&payload.User{Id:userId,Password: password,OrganisationId: organisationId})
 			return &response.User{},err
