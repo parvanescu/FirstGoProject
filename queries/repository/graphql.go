@@ -108,6 +108,26 @@ func (r *Repository) GetAllUsers() (*[]response.User, error) {
 
 	return users,nil
 }
+func (r *Repository) GetAllUsersByOrganisationId(id primitive.ObjectID) (*[]response.User,error){
+	itemCollection := r.client.Database("ToDoApp").Collection("Users")
+	query := []bson.M{
+		{"$match": bson.M{
+			"organisationId": id,
+		}}}
+	cursor,err:= itemCollection.Aggregate(context.TODO(),query)
+	if err !=nil{
+		return nil, err
+	}
+	users := new([]response.User)
+	err = cursor.All(context.TODO(),users)
+	if err != nil {
+		return nil, err
+	}
+	if len(*users) == 0{
+		return nil,errors.New("no users from this organisation has been found")
+	}
+	return users,nil
+}
 func (r *Repository) GetUserById(id primitive.ObjectID) (*response.User, error) {
 	itemCollection := r.client.Database("ToDoApp").Collection("Users")
 	query := []bson.M{

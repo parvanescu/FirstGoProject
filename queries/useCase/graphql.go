@@ -154,6 +154,25 @@ func (uC *UseCase) GetAllUsers(payloadToken string) (*[]response.User, string, e
 
 	return users,newToken,nil
 }
+func (uC *UseCase)GetAllUsersByOrganisation(payloadToken string)(*[]response.User,string,error){
+	tkn,err := token.CheckToken(payloadToken)
+	if err!=nil {
+		return nil,"",err
+	}
+
+	newToken,err:=token.CreateToken(tkn)
+	if err!=nil{
+		return nil, newToken, err
+	}
+
+	users,err := uC.queriesRepository.GetAllUsersByOrganisationId(tkn.OrganisationId)
+	if err != nil{
+		return nil,newToken,err
+	}
+
+	return users,newToken,nil
+}
+
 
 
 func New(repo queries.IRepository)queries.IUseCase{

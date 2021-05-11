@@ -7,6 +7,7 @@ import (
 	"ExGabi/types"
 	"ExGabi/utils/gql"
 	"ExGabi/utils/token"
+	"fmt"
 	"github.com/graphql-go/graphql"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -24,7 +25,9 @@ func New(uc mutations.IUseCase) graphql.Fields {
 		"updateItem": h.updateItem(),
 		"deleteUser": h.deleteUser(),
 		"updateUser": h.updateUser(),
+		"updateUserPerformedByLeader": h.updateUserPerformedByLeader(),
 		"register": h.register(),
+		"addInactiveUser":h.addInactiveUser(),
 		"login": h.login(),
 		"searchItem":h.searchItem(),
 		"checkToken":h.checkToken(),
@@ -163,6 +166,37 @@ func (h Handler) updateUser() *graphql.Field {
 	}
 }
 
+func (h Handler) updateUserPerformedByLeader() *graphql.Field {
+	return &graphql.Field{
+		Type: types.UserType,
+		Description: "Update a user\n Returns old values of User",
+		Args: graphql.FieldConfigArgument{
+			"last_name":&graphql.ArgumentConfig{Type: graphql.String},
+			"first_name":&graphql.ArgumentConfig{Type: graphql.String},
+			"old_email":&graphql.ArgumentConfig{Type: graphql.String},
+			"new_email":&graphql.ArgumentConfig{Type: graphql.String},
+			"new_password":&graphql.ArgumentConfig{Type: graphql.String},
+			"token":&graphql.ArgumentConfig{Type: graphql.String},
+		},
+		Resolve: func(params graphql.ResolveParams)(interface{},error){
+			fmt.Println("aaa")
+			responseUsr,err:=h.uC.UpdateUserPerformedByLeader(
+				&payload.User{
+					LastName:  params.Args["last_name"].(string),
+					FirstName: params.Args["first_name"].(string),
+					Email:     params.Args["new_email"].(string),
+					Password:  params.Args["new_password"].(string),
+					Token: params.Args["token"].(string),
+				},params.Args["old_email"].(string))
+			if err!=nil{
+				return nil, err
+			}
+			return responseUsr, nil
+
+		},
+	}
+}
+
 func (h Handler) register() *graphql.Field {
 	return &graphql.Field{
 		Type: types.UserType,
@@ -195,9 +229,37 @@ func (h Handler) register() *graphql.Field {
 	}
 }
 
+func (h Handler) addInactiveUser() *graphql.Field {
+	return &graphql.Field{
+		Type: types.UserType,
+		Description: "Add inactive user",
+		Args: graphql.FieldConfigArgument{
+			"last_name":&graphql.ArgumentConfig{Type: graphql.String},
+			"first_name":&graphql.ArgumentConfig{Type: graphql.String},
+			"email":&graphql.ArgumentConfig{Type: graphql.String},
+			"password":&graphql.ArgumentConfig{Type: graphql.String},
+			"token":&graphql.ArgumentConfig{Type: graphql.String},
+		},
+		Resolve: func(params graphql.ResolveParams)(interface{},error){
+			user,err:=h.uC.AddInactiveUser(
+				&payload.User{
+					LastName: params.Args["last_name"].(string),
+					FirstName: params.Args["first_name"].(string),
+					Email:    params.Args["email"].(string),
+					Password: params.Args["password"].(string),
+					Token: params.Args["token"].(string),
+				})
+			if err!=nil{
+				return nil, err
+			}
+			return user, nil
+		},
+	}
+}
+
 func (h *Handler) login() *graphql.Field {
 	return &graphql.Field{
-		Type: graphql.String,
+		Type: types.UserType,
 		Description: "Login",
 		Args: graphql.FieldConfigArgument{
 			"email": &graphql.ArgumentConfig{Type: graphql.String},
@@ -206,8 +268,8 @@ func (h *Handler) login() *graphql.Field {
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			email := p.Args["email"].(string)
 			password := p.Args["password"].(string)
-			tkn,err:=h.uC.Login(&payload.User{Email: email,Password: password})
-			return tkn,err
+			user,err:=h.uC.Login(&payload.User{Email: email,Password: password})
+			return user,err
 		},
 	}
 }
@@ -278,3 +340,7 @@ func (h *Handler) setPassword() *graphql.Field {
 		},
 	}
 }
+
+
+
+

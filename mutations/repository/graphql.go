@@ -142,9 +142,11 @@ func (r *Repository) AddUser(organisationId primitive.ObjectID,user *payload.Use
 		FirstName: user.FirstName,
 		LastName: user.LastName,
 		Email: user.Email,
-		Password: "",
 		OrganisationId: organisationId,
 		Status:   false,
+	}
+	if user.Password!="" {
+		modelUser.Password = user.Password
 	}
 	_,err := r.GetUserByEmail(user)
 	if err==nil{
@@ -186,6 +188,8 @@ func (r *Repository) UpdateUser(user *payload.User) (*response.User, error) {
 		FirstName: user.FirstName,
 		Email:     user.Email,
 		Password:  user.Password,
+		OrganisationId: user.OrganisationId,
+		Status: user.Status,
 	}
 	updateValue := bson.M{
 		"$set": modelUser,

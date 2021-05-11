@@ -88,6 +88,36 @@ func (uC *UseCase) UpdateUser(user *payload.User) (*response.User, error) {
 	newUser.Token = newToken
 	return newUser, nil
 }
+func (uC *UseCase) UpdateUserPerformedByLeader(user *payload.User,oldEmail string)(*response.User,error){
+	tknClaims, err := token.CheckToken(user.Token)
+	if err != nil {
+		return nil, err
+	}
+	newToken, err := token.CreateToken(tknClaims)
+	if err != nil {
+		return nil, err
+	}
+	oldUser,err := uC.mutationRepository.GetUserByEmail(&payload.User{Email: oldEmail})
+	if err != nil{
+		return nil, err
+	}
+
+	user.Id = oldUser.Id
+	user.OrganisationId = oldUser.OrganisationId
+	user.Status = oldUser.Status
+	if user.LastName == ""{user.LastName = oldUser.LastName}
+	if user.FirstName == ""{user.FirstName = oldUser.FirstName}
+	if user.Email == ""{user.Email = oldEmail}
+	if user.Password == ""{user.Password = oldUser.Password}
+
+	responseUser,err := uC.mutationRepository.UpdateUser(user)
+	if err!=nil{
+		return nil,err
+	}
+	responseUser.Token = newToken
+	return responseUser, nil
+
+}
 
 func (uC *UseCase) Register(user *payload.User, organisation *payload.Organisation) (*response.User, *response.Organisation, error) {
 	err := utils.CheckRegisterCredentials(user)
@@ -135,16 +165,51 @@ func (uC *UseCase) Register(user *payload.User, organisation *payload.Organisati
 	}
 
 }
-func (uC UseCase) Login(user *payload.User) (string, error) {
+func (uC *UseCase) Login(user *payload.User) (*response.User, error) {
 	responseUser, err := uC.mutationRepository.GetUserByCredentials(user)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+
+	if responseUser.Status == false{
+		return &response.User{Id: responseUser.Id,OrganisationId: responseUser.OrganisationId,Status: false}, nil
+	}
+
 	tkn, err := token.CreateToken(&response.User{Id: responseUser.Id, Email: responseUser.Email, OrganisationId: responseUser.OrganisationId})
 	if err != nil {
-		return "", nil
+		return nil, err
 	}
-	return tkn, nil
+	return &response.User{Token: tkn,Status: true}, nil
+}
+func (uC *UseCase) AddInactiveUser(user *payload.User)(*response.User,error){
+	tknClaims, err := token.CheckToken(user.Token)
+	if err != nil {
+		return nil, err
+	}
+	newToken, err := token.CreateToken(tknClaims)
+	if err != nil {
+		return nil, err
+	}
+	user.Id = tknClaims.Id
+
+	err = utils.CheckRegisterCredentials(user)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = uC.mutationRepository.GetUserByEmail(user)
+	if err == nil{
+		return nil, errors.New("email already exists")
+	}
+	if err.Error() == "not found"{
+		user.Status=false
+		_,err:=uC.mutationRepository.AddUser(tknClaims.OrganisationId,user)
+		if err!=nil{
+			return nil, err
+		}
+		return &response.User{Token: newToken},nil
+	} else {return nil, errors.New("DB error")}
+
 }
 
 func (uC *UseCase) SetUserPassword(user *payload.User) error {

@@ -23,7 +23,7 @@ func New(uc queries.IUseCase) graphql.Fields {
 		"getUserById":h.getUserById(),
 		"getUsersProfile":h.getUsersProfile(),
 		"getAllUsers":h.getAllUsers(),
-
+		"getAllUsersByOrganisation":h.getAllUsersByOrganisation(),
 
 	}
 }
@@ -148,6 +148,29 @@ func (h *Handler) getAllUsers() *graphql.Field {
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			token:= p.Args["token"].(string)
 			usersList,newToken,err:= h.uC.GetAllUsers(token)
+			if len(*usersList)!=0{
+				(*usersList)[0].Token = newToken
+				return usersList,err
+			}else{
+				list :=[1]response.User{}
+				list[0]=response.User{Token: newToken}
+				return list,err
+			}
+		},
+	}
+}
+
+func (h *Handler) getAllUsersByOrganisation() *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewList(types.UserType),
+		Description: "Get all users by organisation",
+		Args: graphql.FieldConfigArgument{
+			"token":&graphql.ArgumentConfig{
+				Type: graphql.String},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			token:= p.Args["token"].(string)
+			usersList,newToken,err:= h.uC.GetAllUsersByOrganisation(token)
 			if len(*usersList)!=0{
 				(*usersList)[0].Token = newToken
 				return usersList,err

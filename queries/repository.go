@@ -14,6 +14,7 @@ type IRepository interface{
 	GetItemById(id primitive.ObjectID) (*response.Item,error)
 
 	GetAllUsers() (*[]response.User,error)
+	GetAllUsersByOrganisationId(id primitive.ObjectID) (*[]response.User,error)
 	GetUserById(id primitive.ObjectID) (*response.User,error)
 	GetUserByCredentials(user *payload.User)(*response.User,error)
 	GetUserByEmail(user *payload.User)(*response.User,error)
