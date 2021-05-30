@@ -18,4 +18,6 @@ type IRepository interface{
 	GetUserById(id primitive.ObjectID) (*response.User,error)
 	GetUserByCredentials(user *payload.User)(*response.User,error)
 	GetUserByEmail(user *payload.User)(*response.User,error)
+
+	GetPositionsByOrganisationId(organisationId primitive.ObjectID)(*[]response.Position,error)
 }

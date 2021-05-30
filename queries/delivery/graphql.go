@@ -24,7 +24,7 @@ func New(uc queries.IUseCase) graphql.Fields {
 		"getUsersProfile":h.getUsersProfile(),
 		"getAllUsers":h.getAllUsers(),
 		"getAllUsersByOrganisation":h.getAllUsersByOrganisation(),
-
+		"getPositionsByOrganisation":h.getPositionsByOrganisation(),
 	}
 }
 
@@ -177,6 +177,29 @@ func (h *Handler) getAllUsersByOrganisation() *graphql.Field {
 			}else{
 				list :=[1]response.User{}
 				list[0]=response.User{Token: newToken}
+				return list,err
+			}
+		},
+	}
+}
+
+func (h *Handler) getPositionsByOrganisation() *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewList(types.PositionType),
+		Description: "Get all positions from a certain organisation",
+		Args: graphql.FieldConfigArgument{
+			"token":&graphql.ArgumentConfig{
+				Type: graphql.String},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			token:= p.Args["token"].(string)
+			positionsList,newToken,err:= h.uC.GetPositionsByOrganisation(token)
+			if len(*positionsList)!=0{
+				(*positionsList)[0].Token = newToken
+				return positionsList,err
+			}else{
+				list :=[1]response.Position{}
+				list[0]=response.Position{Token: newToken}
 				return list,err
 			}
 		},

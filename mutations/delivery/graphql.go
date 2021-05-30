@@ -32,6 +32,8 @@ func New(uc mutations.IUseCase) graphql.Fields {
 		"searchItem":h.searchItem(),
 		"checkToken":h.checkToken(),
 		"setPassword":h.setPassword(),
+		"addPosition":h.addPosition(),
+		"exchangePositions":h.exchangePosition(),
 	}
 }
 
@@ -338,6 +340,66 @@ func (h *Handler) setPassword() *graphql.Field {
 			err := h.uC.SetUserPassword(&payload.User{Id:userId,Password: password,OrganisationId: organisationId})
 			return &response.User{},err
 		},
+	}
+}
+
+func (h Handler) addPosition() *graphql.Field {
+	return &graphql.Field{
+		Description:       "Add position to a specific organisation",
+		Type:              types.PositionType,
+		Args:              graphql.FieldConfigArgument{
+			"access_level": &graphql.ArgumentConfig{Type: graphql.Int},
+			"name": &graphql.ArgumentConfig{Type: graphql.String},
+			"token": &graphql.ArgumentConfig{Type: graphql.String},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			accessLevel := p.Args["access_level"].(int)
+			name := p.Args["name"].(string)
+			jwtToken := p.Args["token"].(string)
+			position,err := h.uC.AddPosition(&payload.Position{
+				Name:           name,
+				AccessLevel:    accessLevel,
+				Token:          jwtToken,
+			})
+			if err != nil{
+				return nil, err
+			}
+			return position, nil
+
+		},
+
+	}
+}
+
+func (h Handler) exchangePosition() *graphql.Field {
+	return &graphql.Field{
+		Description:       "Exchange positions access levels",
+		Type:              graphql.NewList(types.PositionType),
+		Args:              graphql.FieldConfigArgument{
+			"bottom_position_id": &graphql.ArgumentConfig{Type: gql.ObjectId},
+			"bottom_position_level": &graphql.ArgumentConfig{Type: graphql.Int},
+			"top_position_id": &graphql.ArgumentConfig{Type: gql.ObjectId},
+			"top_position_level": &graphql.ArgumentConfig{Type: graphql.Int},
+			"token": &graphql.ArgumentConfig{Type: graphql.String},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			bottomPositionId := p.Args["bottom_position_id"].(primitive.ObjectID)
+			bottomPositionLevel := p.Args["bottom_position_level"].(int)
+			topPositionId := p.Args["top_position_id"].(primitive.ObjectID)
+			topPositionLevel := p.Args["top_position_level"].(int)
+			jwtToken := p.Args["token"].(string)
+			newBottomPosition,newTopPosition,err := h.uC.ExchangePositionsAccessLevel(
+				&payload.Position{Id:bottomPositionId,AccessLevel: bottomPositionLevel,Token: jwtToken},
+				&payload.Position{Id:topPositionId,AccessLevel: topPositionLevel})
+			if err != nil{
+				return nil, err
+			}
+			positionsList := new([]response.Position)
+			positions := append(*positionsList,*newBottomPosition,*newTopPosition)
+			return positions, nil
+
+		},
+
 	}
 }
 

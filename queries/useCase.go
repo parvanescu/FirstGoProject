@@ -17,6 +17,8 @@ type IUseCase interface {
 	GetUserByEmail(user *payload.User)(*response.User,error)
 	GetAllUsers(token string) (*[]response.User,string,error)
 	GetAllUsersByOrganisation(token string)(*[]response.User,string,error)
+
+	GetPositionsByOrganisation(token string)(*[]response.Position,string,error)
 	
 
 }

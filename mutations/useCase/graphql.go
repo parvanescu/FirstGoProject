@@ -14,6 +14,8 @@ type UseCase struct {
 	mutationRepository mutations.IRepository
 }
 
+
+
 func New(repo mutations.IRepository) mutations.IUseCase {
 	return &UseCase{repo}
 }
@@ -28,6 +30,9 @@ func (uC *UseCase) AddItem(item *payload.Item) (*response.Item, error) {
 		return nil, nil
 	}
 	id, err := uC.mutationRepository.AddItem(tokenClaims.Id, item)
+	if err != nil{
+		return nil, err
+	}
 	return &response.Item{Id: id, Token: newToken}, nil
 }
 func (uC *UseCase) DeleteItem(item *payload.Item) (string, error) {
@@ -245,6 +250,35 @@ func (uC *UseCase) GetMatchingSearch(item *payload.Item) (*[]response.Item, stri
 	return descriptionItems, newToken, nil
 }
 
+
+func (uC *UseCase) AddPosition(position *payload.Position) (*response.Position, error) {
+	tokenClaims, err := token.CheckToken(position.Token)
+	if err != nil{
+		return nil, err
+	}
+	newToken ,err := token.CreateToken(tokenClaims)
+	position.OrganisationId = tokenClaims.OrganisationId
+	id,err := uC.mutationRepository.AddPositionToOrganisation(position)
+	if err != nil{
+		return nil, err
+	}
+	return &response.Position{Id: id,Token: newToken}, nil
+}
+
+func (uC *UseCase) ExchangePositionsAccessLevel(bottomPosition *payload.Position, topPosition *payload.Position) (*response.Position, *response.Position, error) {
+	tokenClaims, err := token.CheckToken(bottomPosition.Token)
+	if err != nil{
+		return nil,nil, err
+	}
+	newToken ,err := token.CreateToken(tokenClaims)
+	newTopPosition,newBottomPosition,err := uC.mutationRepository.ExchangePositions(bottomPosition,topPosition)
+	if err != nil{
+		return nil, nil, err
+	}
+	newTopPosition.Token=newToken
+	newBottomPosition.Token = newToken
+	return newBottomPosition, newTopPosition, nil
+}
 //func createIndexes(collectionName string, coll *mongo.Collection) error {
 //	if collectionName == "quote_requests" {
 //		mod1 := mongo.IndexModel{Keys: bson.M{"origin_name": 1}, Options: nil}

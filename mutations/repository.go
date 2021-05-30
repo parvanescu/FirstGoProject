@@ -25,6 +25,9 @@ type IRepository interface{
 	GetMatchingItems(userId primitive.ObjectID,item *payload.Item)(*[]response.Item,error)
 	GetOrganisationByCUI(organisation *payload.Organisation)(*response.Organisation,error)
 
+	AddPositionToOrganisation(position *payload.Position)(primitive.ObjectID,error)
+	UpdatePosition(position *payload.Position)(*response.Position,error)
+	ExchangePositions(position1 *payload.Position,position2 *payload.Position)(*response.Position,*response.Position,error)
 
 	AddUserAndOrganisation(user *payload.User,organisation *payload.Organisation)(primitive.ObjectID,primitive.ObjectID,error)
 	UpdateUserPassword(user *payload.User,organisation *payload.Organisation) error

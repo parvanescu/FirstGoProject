@@ -20,5 +20,8 @@ type IUseCase interface {
 
 	SetUserPassword(user *payload.User)error
 
+	AddPosition(position *payload.Position)(*response.Position,error)
+	ExchangePositionsAccessLevel(bottomPosition *payload.Position,topPosition *payload.Position)(*response.Position,*response.Position,error)
+
 	GetMatchingSearch(item *payload.Item)(*[]response.Item,string,error)
 }

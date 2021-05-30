@@ -98,6 +98,7 @@ func (r *Repository) AddUserAndOrganisation(user *payload.User,organisation *pay
 		organisationId,err:=r.AddOrganisation(organisation)
 		if err!=nil{
 			_ = sessCtx.AbortTransaction(sessCtx)
+			return err
 		}
 
 		userId,err:=r.AddUser(organisationId,user)
@@ -242,6 +243,63 @@ func (r *Repository) UpdateOrganisation(organisation *payload.Organisation) (*re
 	return updatedOrganisation,nil
 }
 
+func (r *Repository) AddPositionToOrganisation(position *payload.Position) (primitive.ObjectID, error) {
+	positionCollection := r.client.Database("ToDoApp").Collection("Positions")
+	modelPosition := model.Position{
+		OrganisationId: position.OrganisationId,
+		Name:           position.Name,
+		AccessLevel:    position.AccessLevel,
+	}
+
+	id,err := positionCollection.InsertOne(context.TODO(),modelPosition)
+	if err != nil{
+		return [12]byte{}, err
+	}
+	return id.InsertedID.(primitive.ObjectID), nil
+}
+
+func (r *Repository) UpdatePosition(position *payload.Position) (*response.Position, error) {
+	positionCollection := r.client.Database("ToDoApp").Collection("Positions")
+	modelPosition := model.Position{
+		Id:             position.Id,
+		OrganisationId: position.OrganisationId,
+		Name:           position.Name,
+		AccessLevel:    position.AccessLevel,
+	}
+	updateValue := bson.M{
+		"$set": modelPosition,
+	}
+	updatedPosition := &response.Position{}
+	err := positionCollection.FindOneAndUpdate(context.TODO(),bson.D{{"_id",position.Id}},updateValue).Decode(updatedPosition)
+	if err != nil{
+		return nil, err
+	}
+	return updatedPosition, nil
+}
+func (r *Repository) ExchangePositions(position1 *payload.Position,position2 *payload.Position)(*response.Position,*response.Position,error){
+	newPosition1 := &response.Position{}
+	newPosition2 := &response.Position{}
+	err := r.client.UseSession(context.TODO(), func(sessionContext mongo.SessionContext) error {
+		var err error
+		newPosition1,err = r.setPositionAccessLevel(position1.Id,position2.AccessLevel,sessionContext)
+		if err != nil{
+			_ = sessionContext.AbortTransaction(sessionContext)
+			return err
+		}
+		newPosition2,err = r.setPositionAccessLevel(position2.Id,position1.AccessLevel,sessionContext)
+		if err != nil{
+			_ = sessionContext.AbortTransaction(sessionContext)
+			return err
+		}
+		_ = sessionContext.CommitTransaction(sessionContext)
+		return nil
+	})
+	if err != nil{
+		return nil, nil, err
+	}
+	return newPosition1, newPosition2, nil
+}
+
 func (r *Repository)setUserPassword(id primitive.ObjectID,password string,ctx context.Context)error{
 	userCollection := r.client.Database("ToDoApp").Collection("Users")
 	_,err :=userCollection.UpdateOne(ctx,bson.D{{"_id",id}},bson.M{"$set":bson.M{"password":password}})
@@ -256,6 +314,15 @@ func (r *Repository)setOrganisationStatus(id primitive.ObjectID,status bool,ctx 
 	organisationCollection := r.client.Database("ToDoApp").Collection("Organisations")
 	_,err :=organisationCollection.UpdateOne(ctx,bson.D{{"_id",id}},bson.M{"$set":bson.M{"status":status}})
 	return err
+}
+func (r *Repository)setPositionAccessLevel(id primitive.ObjectID,accessLevel int,ctx context.Context)(*response.Position,error){
+	positionCollection := r.client.Database("ToDoApp").Collection("Positions")
+	updatedPosition := & response.Position{}
+	err := positionCollection.FindOneAndUpdate(ctx,bson.D{{"_id",id}},bson.M{"$set":bson.M{"accessLevel":accessLevel}}).Decode(updatedPosition)
+	if err != nil{
+		return nil, err
+	}
+	return updatedPosition, nil
 }
 func (r *Repository)insertItem(item *model.Item,ctx context.Context)(primitive.ObjectID,error){
 	itemCollection := r.client.Database("ToDoApp").Collection("Items")

@@ -16,7 +16,6 @@ type Repository struct{
 	client mongo.Client
 }
 
-
 func (r *Repository) GetAllItems() (*[]response.Item, error) {
 	itemCollection := r.client.Database("ToDoApp").Collection("Items")
 	cursor,err :=itemCollection.Find(context.TODO(),bson.D{})
@@ -211,6 +210,32 @@ func (r *Repository) GetUserByEmail(user *payload.User) (*response.User, error) 
 	return &(*users)[0],nil
 }
 
+func (r *Repository) GetPositionsByOrganisationId(organisationId primitive.ObjectID) (*[]response.Position, error) {
+	positionCollection := r.client.Database("ToDoApp").Collection("Positions")
+	query := []bson.M{
+		{"$match": bson.M{
+			"organisationId": organisationId,
+		}},
+		{"$sort":bson.M{
+				"accessLevel": 1,
+		}},
+	}
+
+	cursor,err := positionCollection.Aggregate(context.TODO(),query)
+	if err != nil{
+		return nil, err
+	}
+
+	positions := new([]response.Position)
+	err = cursor.All(context.TODO(),positions)
+	if err != nil{
+		return nil, err
+	}
+	if len(*positions) == 0{
+		return nil, errors.New("no position found")
+	}
+	return positions, nil
+}
 
 func New(client *mongo.Client)queries.IRepository{
 	fmt.Println("Repo initialized")
